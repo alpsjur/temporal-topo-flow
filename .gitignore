@@ -27,11 +27,12 @@ Manifest.toml
 
 ### Other ###
 
+.vscode
+
 # Figures
 figures/
 *.pdf
 *.png
 
 # data
-data/
-*data/
+output/
