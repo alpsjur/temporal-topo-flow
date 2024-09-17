@@ -19,36 +19,39 @@ PROBLEM: get very high velocities, negative h
 """
 
 using Oceananigans
+using Oceananigans.Units
 using Oceananigans.Models.ShallowWaterModels
 using Statistics
+using Printf                   # formatting text
+using CUDA                     # for running on GPU
 
 # bathymetric parameters
-h₀ = 20                       # minimum depth
-α  = 5.2e-5                   # e-folding scale
-δ  = 0.636                    # corresponding to a midshelf depth pertubation of ~40 m
-k  = 2π/(150e3)               # wave length of 150km
-θ  = 0                        # Some kind of phase shift? Relevant for non-monocromatic bathymetry?
-Lx, Ly = 450e3, 90e3          # domain length
+const h₀ = 20                       # minimum depth
+const α  = 5.2e-5                   # e-folding scale
+const δ  = 0.636                    # corresponding to a midshelf depth pertubation of ~40 m
+const k  = 2π/(150e3)               # wave length of 150km
+const θ  = 0                        # Some kind of phase shift? Relevant for non-monocromatic bathymetry?
+const Lx, Ly = 450e3, 90e3          # domain length
 
 
-Nx, Ny = 128, 128           # number of grid points
-ρ₀ = 1026.5                 # mean density
+const Nx, Ny = 128, 128           # number of grid points
+const ρ₀ = 1026.5                 # mean density
 
 # forcing parameters
-τ = 1e-1/ρ₀                      # 1 dyn cm⁻2  = 10^-5 N 10^4 m^-2 
-ω = 2π/(60*60*24*10)          # period of 10 days              
-μ = 0                         # Some kind of phase shift? Relevant for non-monocromatic forcing?
+const τ = 1e-2/ρ₀                 # 1 dyn cm⁻2  = 10^-5 N 10^4 m^-2 
+const ω = 2π/(10days)             # period of 10 days              
+const μ = 0                       # Some kind of phase shift? Relevant for non-monocromatic forcing?
 
-r = 3e-2                      # Bottom drag coefficient m/s
+const r = 3e-2              # Bottom drag coefficient m/s
 
 gravitational_acceleration = 9.81
 coriolis = FPlane(f=10e-4)
 
-tmax = 60*60*24*100              # integrated for 100 days
-Δt   = 60*60*24*10/1e1           # 1/100 of wind forcing period 
+tmax = 100days              # integrated for 100 days
+Δt   = 10days/100           # 1/100 of wind forcing period 
 
 # create grid
-grid = RectilinearGrid(CPU(),
+grid = RectilinearGrid(GPU(),
                        size = (Nx, Ny),
                        x = (0, Lx), y = (0, Ly),
                        topology = (Periodic, Bounded, Flat))
@@ -60,23 +63,23 @@ b(x, y) = -hᵢ(x, y)
             
 
 # define bottom drag for vector invariant formulation
-drag_u(x, y, t, u, v, r) = -r*u/hᵢ(x, y)
-drag_v(x, y, t, u, v, r) = -r*v/hᵢ(x, y)
+drag_u(x, y, t, u, v) = -r*u/hᵢ(x, y)
+drag_v(x, y, t, u, v) = -r*v/hᵢ(x, y)
 
 # define bottom drag for conservative formulation
-drag_uh(x, y, t, uh, vh, r) = -r*uh/hᵢ(x, y)
-drag_vh(x, y, t, uh, vh, r) = -r*vh/hᵢ(x, y)
+drag_uh(x, y, t, uh, vh) = -r*uh/hᵢ(x, y)
+drag_vh(x, y, t, uh, vh) = -r*vh/hᵢ(x, y)
 
 # define forcing, equation 2.5 in Haidvogel & Brink, + a linear drag
-τx(x, y, t, u, v, r) = τ*sin(ω*t+μ)/hᵢ(x, y) + drag_u(x, y, t, u, v, r) 
-τy(x, y, t, u, v, r) = drag_v(x, y, t, u, v, r)     
-u_forcing = Forcing(τx, parameters=r, field_dependencies=(:u, :v))
-v_forcing = Forcing(τy, parameters=r, field_dependencies=(:u, :v))
+τx(x, y, t, u, v) = 1e-10#drag_u(x, y, t, u, v) + τ*sin(ω*t+μ)/hᵢ(x, y)
+τy(x, y, t, u, v) = 0#drag_v(x, y, t, u, v)     
+u_forcing = Forcing(τx, field_dependencies=(:u, :v))
+v_forcing = Forcing(τy, field_dependencies=(:u, :v))
 
-τxh(x, y, t, uh, vh, r) = τ*sin(ω*t+μ) + drag_uh(x, y, t, uh, vh, r)
-τyh(x, y, t, uh, vh, r) = drag_vh(x, y, t, uh, vh, r)
-uh_forcing = Forcing(τxh, parameters=r, field_dependencies=(:uh, :vh))
-vh_forcing = Forcing(τyh, parameters=r, field_dependencies=(:uh, :vh))
+τxh(x, y, t, uh, vh) = 1e-1*drag_uh(x, y, t, uh, vh) + τ*sin(ω*t+μ)/hᵢ(x, y)
+τyh(x, y, t, uh, vh) = 1e-1*drag_vh(x, y, t, uh, vh)
+uh_forcing = Forcing(τxh, field_dependencies=(:uh, :vh))
+vh_forcing = Forcing(τyh, field_dependencies=(:uh, :vh))
 
 
 # boundary conditions 
@@ -111,9 +114,26 @@ set!(model, h=hᵢ)
 
 simulation = Simulation(model, Δt=Δt, stop_time=tmax)
 
-# Logging simulation progress
-progress(sim) = @info string("Iteration: ", iteration(sim), ", time: ", time(sim))
-simulation.callbacks[:progress] = Callback(progress, IterationInterval(50))
+# # Logging simulation progress
+# progress(sim) = @info string("Iteration: ", iteration(sim), ", time: ", time(sim))
+
+
+# simulation.callbacks[:progress] = Callback(progress, IterationInterval(50))
+
+# logging simulation progress
+start_time = time_ns()
+progress(sim) = @printf(
+    "i: %d, sim time: % 8s, min(u): %.3f ms⁻¹, max(u): %.3f ms⁻¹, min(h): %.1f m, max(h): %.1f m\n",#, wall time: %s\n",
+    sim.model.clock.iteration,
+    prettytime(sim.model.clock.time),
+    minimum(u),
+    maximum(u),
+    minimum(h),
+    maximum(h),
+    #prettytime(1e-9 * (time_ns() - start_time))
+)
+
+simulation.callbacks[:progress] = Callback(progress, IterationInterval(1))
 
 # output
 filename = "alternating_wind_basic_case"
