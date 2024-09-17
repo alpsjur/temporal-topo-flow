@@ -26,7 +26,8 @@ using Printf                   # formatting text
 using CUDA                     # for running on GPU
 
 # bathymetric parameters
-const h₀ = 20                       # minimum depth
+const h₀ = 500                      # minimum depth
+const h₁ = 700
 const α  = 5.2e-5                   # e-folding scale
 const δ  = 0.636                    # corresponding to a midshelf depth pertubation of ~40 m
 const k  = 2π/(150e3)               # wave length of 150km
@@ -47,18 +48,18 @@ const r = 3e-2              # Bottom drag coefficient m/s
 gravitational_acceleration = 9.81
 coriolis = FPlane(f=10e-4)
 
-tmax = 100days              # integrated for 100 days
-Δt   = 10days/100           # 1/100 of wind forcing period 
+tmax = 1days              # integrated for 100 days
+Δt   = 10days/1e4           # 1/100 of wind forcing period 
 
 # create grid
-grid = RectilinearGrid(GPU(),
+grid = RectilinearGrid(#GPU(),
                        size = (Nx, Ny),
                        x = (0, Lx), y = (0, Ly),
                        topology = (Periodic, Bounded, Flat))
 
 
 # define bathymetry, equation 2.4 in Haidvogel & Brink
-hᵢ(x, y) = h₀*exp(α*y + sin(π*y/Ly)*δ*sin(k*x+θ)) 
+hᵢ(x, y) = h₀ + (h₁-h₀)*y/Ly
 b(x, y) = -hᵢ(x, y)
             
 
@@ -71,13 +72,13 @@ drag_uh(x, y, t, uh, vh) = -r*uh/hᵢ(x, y)
 drag_vh(x, y, t, uh, vh) = -r*vh/hᵢ(x, y)
 
 # define forcing, equation 2.5 in Haidvogel & Brink, + a linear drag
-τx(x, y, t, u, v) = 1e-10#drag_u(x, y, t, u, v) + τ*sin(ω*t+μ)/hᵢ(x, y)
-τy(x, y, t, u, v) = 0#drag_v(x, y, t, u, v)     
+τx(x, y, t, u, v) = 1e-18 + drag_u(x, y, t, u, v) #+ τ*sin(ω*t+μ)/hᵢ(x, y)
+τy(x, y, t, u, v) = drag_v(x, y, t, u, v)     
 u_forcing = Forcing(τx, field_dependencies=(:u, :v))
 v_forcing = Forcing(τy, field_dependencies=(:u, :v))
 
-τxh(x, y, t, uh, vh) = 1e-1*drag_uh(x, y, t, uh, vh) + τ*sin(ω*t+μ)/hᵢ(x, y)
-τyh(x, y, t, uh, vh) = 1e-1*drag_vh(x, y, t, uh, vh)
+τxh(x, y, t, uh, vh) = 1e-18#drag_uh(x, y, t, uh, vh) + τ*sin(ω*t+μ)/hᵢ(x, y)
+τyh(x, y, t, uh, vh) = 0#drag_vh(x, y, t, uh, vh)
 uh_forcing = Forcing(τxh, field_dependencies=(:uh, :vh))
 vh_forcing = Forcing(τyh, field_dependencies=(:uh, :vh))
 
@@ -94,12 +95,12 @@ h_bc = FieldBoundaryConditions(south=hmin_bc, north=hmax_bc)
 model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration,
                           timestepper = :RungeKutta3,
                           bathymetry = b,
-                          closure = ShallowWaterScalarDiffusivity(ν=1e-6, ξ=1e-6),
+                          closure = ShallowWaterScalarDiffusivity(ν=1e-4, ξ=1e-4),
                           
-                        #   formulation = ConservativeFormulation(),
-                        #   momentum_advection = WENO(),
-                        #   forcing = (uh=uh_forcing,vh=vh_forcing),
-                        #   boundary_conditions=(uh=no_slip_field_bcs, vh=no_slip_field_bcs),
+                          # formulation = ConservativeFormulation(),
+                          # momentum_advection = WENO(),
+                          # forcing = (uh=uh_forcing,vh=vh_forcing),
+                          # boundary_conditions=(uh=no_slip_field_bcs, vh=no_slip_field_bcs),
 
                           formulation = VectorInvariantFormulation(),
                           momentum_advection = VectorInvariant(),
