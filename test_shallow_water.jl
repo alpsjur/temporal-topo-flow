@@ -23,9 +23,20 @@ using Statistics
 using Printf                   # formatting text
 using CUDA                     # for running on GPU
 
+
+# Run on GPU (wow, fast!) if available. Else run on CPU
+if CUDA.functional()
+    architecture = GPU()
+    @info "Running on GPU"
+else
+    architecture = CPU()
+    @info "Running on CPU"
+end
+
 # bathymetric parameters
 const h₀ = 1000                      # minimum depth
 const h₁ = 1200                      # maximum depth
+
 
 # Grid parameters
 const Lx = 416kilometers                # Domain length in x-direction
@@ -38,10 +49,12 @@ const Ny = Int(Ly/dy)                   # Number of grid cells in y-direction
 
 const ρ₀ = 1026.5                 # mean density
 
-# forcing parameters
-const τ = 5e-2/ρ₀                 # 1 dyn cm⁻2  = 10^-5 N 10^4 m^-2 
 
-const r = 3e-3                    # Bottom drag coefficient m/s
+# Forcing parameters
+const τ = 0.05/1000                        # Wind stress (kinematic forcing)
+
+# Bottom friction
+const Cd = 3e-3#0.002                      # Quadratic drag coefficient []
 
 gravitational_acceleration = 9.81
 coriolis = FPlane(f=10e-4)
@@ -50,7 +63,7 @@ tmax = 100days
 Δt   = 10second                 
 
 # create grid
-grid = RectilinearGrid(GPU(),
+grid = RectilinearGrid(architecture,
                        size = (Nx, Ny),
                        x = (0, Lx), y = (0, Ly),
                        topology = (Periodic, Bounded, Flat))
@@ -62,30 +75,25 @@ b(x, y) = -hᵢ(x, y)
             
 
 # define bottom drag for vector invariant formulation
-drag_u(x, y, t, u, v) = -r*u/(h₀ + (h₁-h₀)*y/Ly)
-drag_v(x, y, t, u, v) = -r*v/(h₀ + (h₁-h₀)*y/Ly)
+drag_u(x, y, t, u, v, h) = -Cd*√(u^2+v^2)*u/h
+drag_v(x, y, t, u, v, h) = -Cd*√(u^2+v^2)*v/h
 
 
 # define forcing, equation 2.5 in Haidvogel & Brink, + a linear drag
-τx(x, y, t, u, v) = drag_u(x, y, t, u, v) + τ*tanh(t/(10days))/(h₀ + (h₁-h₀)*y/Ly)
-τy(x, y, t, u, v) = drag_v(x, y, t, u, v)     
-u_forcing = Forcing(τx, field_dependencies=(:u, :v))
-v_forcing = Forcing(τy, field_dependencies=(:u, :v))
+τx(x, y, t, u, v, h) = drag_u(x, y, t, u, v, h) + τ*tanh(t/(10days))/h
+τy(x, y, t, u, v, h) = drag_v(x, y, t, u, v, h)     
+u_forcing = Forcing(τx, field_dependencies=(:u, :v, :h))
+v_forcing = Forcing(τy, field_dependencies=(:u, :v, :h))
 
 # boundary conditions 
 no_slip_bc = ValueBoundaryCondition(0.0)
 no_slip_field_bcs = FieldBoundaryConditions(no_slip_bc)
 
-# hmin_bc = ValueBoundaryCondition(h₀)
-# hmax_bc = ValueBoundaryCondition(h₁)
-# h_bc = FieldBoundaryConditions(south=hmin_bc, north=hmax_bc)
-
-
 model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration,
                           momentum_advection = VectorInvariant(),
                           bathymetry = b,
                           closure = ShallowWaterScalarDiffusivity(ν=1e-4, ξ=1e-4),
-                          formulation = VectorInvariantFormulation(),                  # Only this working
+                          formulation = VectorInvariantFormulation(),                  
                           forcing = (u=u_forcing,v=v_forcing),
                           #boundary_conditions=(u=no_slip_field_bcs, v=no_slip_field_bcs),
                           )
@@ -101,14 +109,14 @@ simulation = Simulation(model, Δt=Δt, stop_time=tmax)
 # logging simulation progress
 start_time = time_ns()
 progress(sim) = @printf(
-    "i: %d, sim time: % 8s, min(u): %.3f ms⁻¹, max(u): %.3f ms⁻¹, min(h): %.1f m, max(h): %.1f m\n",#, wall time: %s\n",
+    "i: %d, sim time: % 8s, min(u): %.3f ms⁻¹, max(u): %.3f ms⁻¹, min(h): %.1f m, max(h): %.1f m, wall time: %s\n",
     sim.model.clock.iteration,
     prettytime(sim.model.clock.time),
     minimum(u),
     maximum(u),
     minimum(h),
     maximum(h),
-    #prettytime(1e-9 * (time_ns() - start_time))
+    prettytime(1e-9 * (time_ns() - start_time))
 )
 
 simulation.callbacks[:progress] = Callback(progress, IterationInterval(1day/Δt))
