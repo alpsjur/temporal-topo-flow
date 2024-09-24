@@ -22,6 +22,7 @@ using Oceananigans.Models.ShallowWaterModels
 using Statistics
 using Printf                   # formatting text
 using CUDA                     # for running on GPU
+using CairoMakie               # plotting
 
 
 # Run on GPU (wow, fast!) if available. Else run on CPU
@@ -34,13 +35,20 @@ else
 end
 
 # bathymetric parameters
-const h₀ = 1000                      # minimum depth
-const h₁ = 1200                      # maximum depth
+# const h₀ = 1000                      # minimum depth
+# const h₁ = 1200                      # maximum depth
 
+# bathymetric parameters based on Haidvogel & Brink (1986), with adjustments
+const h₀ = 500                      # minimum depth, need to change this?
+const α  = 1e-5                     # e-folding scale
+const δ  = 0.2                      # corresponding to a midshelf depth pertubation of ~40 m
+const k  = 2π/(150e3)               # wave length of 150km
+const θ  = 0                        # Some kind of phase shift? Relevant for non-monocromatic bathymetry?
+const Lx, Ly = 416e3, 90e3          # domain length
 
-# Grid parameters
-const Lx = 416kilometers                # Domain length in x-direction
-const Ly = 208kilometers                # Domain length in y-direction
+# # Grid parameters
+# const Lx = 416kilometers                # Domain length in x-direction
+# const Ly = 208kilometers                # Domain length in y-direction
 
 const dx = 2kilometers                  # Grid spacing in x-direction
 const dy = 2kilometers                  # Grid spacing in y-direction
@@ -70,7 +78,11 @@ grid = RectilinearGrid(architecture,
 
 
 # define bathymetry
-hᵢ(x, y) = h₀ + (h₁-h₀)*y/Ly
+# hᵢ(x, y) = h₀ + (h₁-h₀)*y/Ly
+
+# define bathymetry, equation 2.4 in Haidvogel & Brink
+hᵢ(x, y) = h₀*exp(α*y + sin(π*y/Ly)*δ*sin(k*x+θ)) 
+
 b(x, y) = -hᵢ(x, y)
             
 
@@ -101,8 +113,22 @@ model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration,
 
 # set initial conditions
 set!(model, h=hᵢ)
+
+
+# plot bathymetry
+figurepath = "figures/"
+fig = Figure()
+axis = Axis(fig[1,1])
+
+bath = model.bathymetry
+
+hm = heatmap!(bath, colormap=:deep)
+Colorbar(fig[1, 2], hm)
+
+save(figurepath*"bathymetry.png", fig)
                          
 
+# initialize simulations
 simulation = Simulation(model, Δt=Δt, stop_time=tmax)
 
 
@@ -122,11 +148,11 @@ progress(sim) = @printf(
 simulation.callbacks[:progress] = Callback(progress, IterationInterval(1day/Δt))
 
 # output
-filename = "alternating_wind_basic_case"
+filename = "test_shallow_water"
 u, v, h = model.solution
 #bath = model.bathymetry
 simulation.output_writers[:fields] = JLD2OutputWriter(model, (; u, v, h),
-                                                    schedule = AveragedTimeInterval(1hour),
+                                                    schedule = AveragedTimeInterval(12hours),
                                                     filename = "output/" * filename * ".jld2",
                                                     overwrite_existing = true)
 nothing
