@@ -33,6 +33,7 @@ Manifest.toml
 figures/
 *.pdf
 *.png
+animations/
 
 # data
 output/
