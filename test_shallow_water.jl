@@ -118,12 +118,13 @@ set!(model, h=hᵢ)
 figurepath = "figures/"
 fig = Figure()
 axis = Axis(fig[1,1], 
+        aspect = DataAspect(),
         title = "Model bathymetry",
         xlabel = "x [m]",
         ylabel = "y [m]",
         )
 
-depth = -model.bathymetry
+depth = model.bathymetry
 
 hm = heatmap!(depth, colormap=:deep)
 Colorbar(fig[1, 2], hm, label = "Depth [m]")
