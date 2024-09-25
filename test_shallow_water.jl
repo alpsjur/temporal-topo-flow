@@ -43,7 +43,7 @@ const α  = 1e-5                     # e-folding scale
 const δ  = 0.2                      # corresponding to a midshelf depth pertubation of ~40 m
 const k  = 2π/(150e3)               # wave length of 150km
 const θ  = 0                        # Some kind of phase shift? Relevant for non-monocromatic bathymetry?
-const Lx, Ly = 416e3, 90e3          # domain length
+const Lx, Ly = 450e3, 90e3          # domain length
 
 # Grid parameters
 const dx = 2kilometers                  # Grid spacing in x-direction
@@ -70,7 +70,9 @@ tmax = 120days
 grid = RectilinearGrid(architecture,
                        size = (Nx, Ny),
                        x = (0, Lx), y = (0, Ly),
-                       topology = (Periodic, Bounded, Flat))
+                       topology = (Periodic, Bounded, Flat),
+                       #halo = (4,4), 
+                       )
 
 
 # define bathymetry
