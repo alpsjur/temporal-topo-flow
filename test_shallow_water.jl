@@ -63,7 +63,7 @@ const Cd = 3e-3#0.002                      # Quadratic drag coefficient []
 gravitational_acceleration = 9.81
 coriolis = FPlane(f=10e-4)
 
-tmax = 100days                
+tmax = 120days                
 Δt   = 10second                 
 
 # create grid
