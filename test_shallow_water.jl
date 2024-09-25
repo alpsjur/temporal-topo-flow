@@ -125,7 +125,7 @@ axis = Axis(fig[1,1],
 
 depth = -model.bathymetry
 
-hm = heatmap!(depth, colormap=:deep, )
+hm = heatmap!(depth, colormap=:deep)
 Colorbar(fig[1, 2], hm, label = "Depth [m]")
 
 save(figurepath*"bathymetry.png", fig)
