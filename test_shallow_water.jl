@@ -24,6 +24,9 @@ using Printf                   # formatting text
 using CUDA                     # for running on GPU
 using CairoMakie               # plotting
 
+# output filename
+filename = "test_shallow_water"
+
 
 # Run on GPU (wow, fast!) if available. Else run on CPU
 if CUDA.functional()
@@ -34,10 +37,6 @@ else
     @info "Running on CPU"
 end
 
-# bathymetric parameters
-# const h₀ = 1000                      # minimum depth
-# const h₁ = 1200                      # maximum depth
-
 # bathymetric parameters based on Haidvogel & Brink (1986), with adjustments
 const h₀ = 500                      # minimum depth, need to change this?
 const α  = 1e-5                     # e-folding scale
@@ -46,10 +45,7 @@ const k  = 2π/(150e3)               # wave length of 150km
 const θ  = 0                        # Some kind of phase shift? Relevant for non-monocromatic bathymetry?
 const Lx, Ly = 416e3, 90e3          # domain length
 
-# # Grid parameters
-# const Lx = 416kilometers                # Domain length in x-direction
-# const Ly = 208kilometers                # Domain length in y-direction
-
+# Grid parameters
 const dx = 2kilometers                  # Grid spacing in x-direction
 const dy = 2kilometers                  # Grid spacing in y-direction
 const Nx = Int(Lx/dx)                   # Number of grid cells in x-direction
@@ -59,7 +55,7 @@ const ρ₀ = 1026.5                 # mean density
 
 
 # Forcing parameters
-const τ = 0.05/1000                        # Wind stress (kinematic forcing)
+const τ = 0.05/ρ₀                      # Wind stress (kinematic forcing)
 
 # Bottom friction
 const Cd = 3e-3#0.002                      # Quadratic drag coefficient []
@@ -90,9 +86,12 @@ b(x, y) = -hᵢ(x, y)
 drag_u(x, y, t, u, v, h) = -Cd*√(u^2+v^2)*u/h
 drag_v(x, y, t, u, v, h) = -Cd*√(u^2+v^2)*v/h
 
+# define surface stress functions
+increasing_surface_stress(t) = τ*tanh(t/(10days))
+varying_surface_stress(t) = τ*sin(2π*t/(20days))
 
-# define forcing, equation 2.5 in Haidvogel & Brink, + a linear drag
-τx(x, y, t, u, v, h) = drag_u(x, y, t, u, v, h) + τ*tanh(t/(10days))/h
+# define total forcing
+τx(x, y, t, u, v, h) = drag_u(x, y, t, u, v, h) + varying_surface_stress(t)/h
 τy(x, y, t, u, v, h) = drag_v(x, y, t, u, v, h)     
 u_forcing = Forcing(τx, field_dependencies=(:u, :v, :h))
 v_forcing = Forcing(τy, field_dependencies=(:u, :v, :h))
@@ -118,12 +117,16 @@ set!(model, h=hᵢ)
 # plot bathymetry
 figurepath = "figures/"
 fig = Figure()
-axis = Axis(fig[1,1])
+axis = Axis(fig[1,1], 
+        title = "Model bathymetry",
+        xlabel = "x [m]",
+        ylabel = "y [m]",
+        )
 
-bath = model.bathymetry
+depth = -model.bathymetry
 
-hm = heatmap!(bath, colormap=:deep)
-Colorbar(fig[1, 2], hm)
+hm = heatmap!(depth, colormap=:deep, )
+Colorbar(fig[1, 2], hm, label = "Depth [m]")
 
 save(figurepath*"bathymetry.png", fig)
                          
@@ -148,7 +151,7 @@ progress(sim) = @printf(
 simulation.callbacks[:progress] = Callback(progress, IterationInterval(1day/Δt))
 
 # output
-filename = "test_shallow_water"
+
 u, v, h = model.solution
 #bath = model.bathymetry
 simulation.output_writers[:fields] = JLD2OutputWriter(model, (; u, v, h),
