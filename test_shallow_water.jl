@@ -46,8 +46,8 @@ const θ  = 0                        # Some kind of phase shift? Relevant for no
 const Lx, Ly = 450e3, 90e3          # domain length
 
 # Grid parameters
-const dx = 2kilometers                  # Grid spacing in x-direction
-const dy = 2kilometers                  # Grid spacing in y-direction
+const dx = 1kilometers                  # Grid spacing in x-direction
+const dy = 1kilometers                  # Grid spacing in y-direction
 const Nx = Int(Lx/dx)                   # Number of grid cells in x-direction
 const Ny = Int(Ly/dy)                   # Number of grid cells in y-direction
 
@@ -64,7 +64,7 @@ gravitational_acceleration = 9.81
 coriolis = FPlane(f=10e-4)
 
 tmax = 120days                
-Δt   = 10second                 
+Δt   = 5second                 
 
 # create grid
 grid = RectilinearGrid(architecture,
