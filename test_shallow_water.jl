@@ -162,26 +162,24 @@ simulation = Simulation(model, Δt=Δt, stop_time=tmax)
 # logging simulation progress
 start_time = time_ns()
 progress(sim) = @printf(
-    "i: %d, sim time: % 8s, min(u): %.3f ms⁻¹, max(u): %.3f ms⁻¹, min(h): %.1f m, max(h): %.1f m, wall time: %s\n",
+    "i: %10d, sim time: % 12s, min(u): %.3f ms⁻¹, max(u): %.3f ms⁻¹, wall time: %12s\n",
     sim.model.clock.iteration,
     prettytime(sim.model.clock.time),
     minimum(u),
     maximum(u),
-    minimum(h),
-    maximum(h),
     prettytime(1e-9 * (time_ns() - start_time))
 )
 
 simulation.callbacks[:progress] = Callback(progress, IterationInterval(1day/Δt))
 
-# output
+#output
 
-# u, v, h = model.solution
-# #bath = model.bathymetry
-# simulation.output_writers[:fields] = JLD2OutputWriter(model, (; u, v, h),
-#                                                     schedule = AveragedTimeInterval(12hours),
-#                                                     filename = "output/" * filename * ".jld2",
-#                                                     overwrite_existing = true)
-# nothing
+u, v, h = model.solution
+#bath = model.bathymetry
+simulation.output_writers[:fields] = JLD2OutputWriter(model, (; u, v, h),
+                                                    schedule = AveragedTimeInterval(12hours),
+                                                    filename = "output/" * filename * ".jld2",
+                                                    overwrite_existing = true)
+nothing
 
-# run!(simulation)
+run!(simulation)
