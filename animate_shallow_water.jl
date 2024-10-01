@@ -6,7 +6,7 @@ using JLD2              # For saving and loading simulation data in Julia format
 
 # Define file path and name of the saved simulation output
 filepath = "output/"
-filename = "test_shallow_water"
+filename = "slope-bumps-noise"
 
 # Visualization step interval for vector fields
 step = 14
@@ -63,7 +63,8 @@ ucₙ = @lift interior(uc_timeseries[$n], Integer(step/2):step:length(xc), Integ
 vcₙ = @lift interior(vc_timeseries[$n], Integer(step/2):step:length(xc), Integer(step/2):step:length(yc))  # v-component of velocity
 
 # Set limits for the color scales used in the plots
-hlim = maximum(interior(h_timeseries))           # Maximum depth for color scaling
+hmax = maximum(interior(h_timeseries))           # Maximum depth for color scaling
+hmin = minimum(interior(h_timeseries))
 slim = maximum(interior(s_timeseries))           # Maximum speed for color scaling
 ωlim = maximum(abs, interior(ω_timeseries))      # Maximum absolute vorticity for color scaling
 
@@ -79,7 +80,7 @@ ax3 = Axis(fig[4, 1]; title = "vorticity [s-1]")      # Axis for vorticity plot
 fig[1, :] = Label(fig, title, fontsize=24, tellwidth=false)
 
 # Create heatmaps for depth, speed, and vorticity fields, with appropriate color scales
-hm_h = heatmap!(ax1, xc, yc, hₙ; colorrange = (0, hlim), colormap = :deep)
+hm_h = heatmap!(ax1, xc, yc, hₙ; colorrange = (hmin, hmax), colormap = :deep)
 Colorbar(fig[2, 2], hm_h)
 
 hm_s = heatmap!(ax2, xc, yc, sₙ; colorrange = (0, slim), colormap = :speed)

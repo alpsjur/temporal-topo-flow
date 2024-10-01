@@ -10,7 +10,7 @@ h = η - b,
 where η is the free surface, b is the bathymetry, both relative to the ocean at rest 
 
 The forcing is added to the right side of the Shallow Water equation
-Linear bottom drag is included in the forcing.
+Quadratic bottom drag is included in the forcing.
 """
 
 using Oceananigans
@@ -22,6 +22,8 @@ using CUDA                     # for running on GPU
 using CairoMakie               # plotting
 
 include(ARGS[1])
+
+@info "Starting configuration " * name
 
 # Run on GPU (wow, fast!) if available. Else run on CPU
 if CUDA.functional()
@@ -45,7 +47,7 @@ const W  =  100kilometers                # Width parameter for bathymetry
 const YC =   90kilometers                # Center y-coordinate for bathymetry features
 const DS = 1500meters                    # Depth change between shelf and central basin
 const DB =  500meters                    # Depth of shelf
-const σ  =   10meters                    # Standard deviation for random noise in topography
+const σ  =    5meters                    # Standard deviation for random noise in topography
 const Lx =  450kilometers                # Domain length in x direction
 const Ly =  180kilometers                # Domain length in y direction
 const a  =   10kilometers                # Amplitude of corrigations (horizontal, so vertical depends on steepnes)
@@ -57,19 +59,14 @@ const dy = 1kilometers                  # Grid spacing in y-direction
 const Nx = Int(Lx/dx)                   # Number of grid cells in x-direction
 const Ny = Int(Ly/dy)                   # Number of grid cells in y-direction
 
-const ρ₀ = 1026.5                       # mean density
-
-# Forcing parameters
-const τ = -0.05/ρ₀                      # Wind stress (kinematic forcing)
-
 # Bottom friction
 const Cd = 3e-3                         # Quadratic drag coefficient []
 
 gravitational_acceleration = 9.81
 coriolis = FPlane(f=10e-4)
 
-tmax = 120days                
-Δt   = 5second                 
+tmax =  120days                
+Δt   = 2seconds                 
 
 # create grid
 grid = RectilinearGrid(architecture,
@@ -152,7 +149,7 @@ depth = model.solution.h
 
 hm = heatmap!(depth, colormap=:deep)
 Colorbar(fig[1, 2], hm, label = "Depth [m]")
-save(figurepath*filename*"_bathymetry.png", fig)
+save(figurepath*name*"_bathymetry.png", fig)
                          
 
 # initialize simulations
@@ -162,7 +159,7 @@ simulation = Simulation(model, Δt=Δt, stop_time=tmax)
 # logging simulation progress
 start_time = time_ns()
 progress(sim) = @printf(
-    "i: %10d, sim time: % 12s, min(u): %.3f ms⁻¹, max(u): %.3f ms⁻¹, wall time: %12s\n",
+    "i: %10d, sim time: % 12s, min(u): %4.3f ms⁻¹, max(u): %4.3f ms⁻¹, wall time: %12s\n",
     sim.model.clock.iteration,
     prettytime(sim.model.clock.time),
     minimum(u),
@@ -170,7 +167,7 @@ progress(sim) = @printf(
     prettytime(1e-9 * (time_ns() - start_time))
 )
 
-simulation.callbacks[:progress] = Callback(progress, IterationInterval(1day/Δt))
+simulation.callbacks[:progress] = Callback(progress, IterationInterval(10day/Δt))
 
 #output
 
@@ -178,7 +175,7 @@ u, v, h = model.solution
 #bath = model.bathymetry
 simulation.output_writers[:fields] = JLD2OutputWriter(model, (; u, v, h),
                                                     schedule = AveragedTimeInterval(12hours),
-                                                    filename = "output/" * filename * ".jld2",
+                                                    filename = "output/" * name * ".jld2",
                                                     overwrite_existing = true)
 nothing
 

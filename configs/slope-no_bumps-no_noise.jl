@@ -1,3 +1,7 @@
+name = "slope-no_bumps-no_noise"
 corrigations = false
 noise = false
-filename = "slope-no_bumps-no_noise"
+
+
+const ρ₀ = 1026.5                       # mean density
+const τ = 0.05/ρ₀                       # Wind stress (kinematic forcing)

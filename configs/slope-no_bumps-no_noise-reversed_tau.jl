@@ -1,5 +1,5 @@
-name = "slope-bumps-no_noise"
-corrigations = true
+name = "slope-no_bumps-no_noise-reversed_tau"
+corrigations = false
 noise = false
 
 

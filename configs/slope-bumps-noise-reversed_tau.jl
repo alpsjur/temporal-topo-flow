@@ -1,6 +1,6 @@
-name = "slope-bumps-no_noise"
+name = "slope-bumps-noise-reversed_tau"
 corrigations = true
-noise = false
+noise = true
 
 
 const ρ₀ = 1026.5                       # mean density
