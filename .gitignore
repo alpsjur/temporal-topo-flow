@@ -26,6 +26,7 @@ docs/site/
 Manifest.toml
 
 ### Other ###
+configs/run
 
 .vscode
 
@@ -37,3 +38,4 @@ animations/
 
 # data
 output/
+

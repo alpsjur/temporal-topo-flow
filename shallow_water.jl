@@ -47,7 +47,7 @@ const W  =  100kilometers                # Width parameter for bathymetry
 const YC =   90kilometers                # Center y-coordinate for bathymetry features
 const DS = 1500meters                    # Depth change between shelf and central basin
 const DB =  500meters                    # Depth of shelf
-const σ  =    5meters                    # Standard deviation for random noise in topography
+const σ  =    5meters                    # Scale parameter for random noise in topography
 const Lx =  450kilometers                # Domain length in x direction
 const Ly =  180kilometers                # Domain length in y direction
 const a  =   10kilometers                # Amplitude of corrigations (horizontal, so vertical depends on steepnes)
@@ -61,12 +61,16 @@ const Ny = Int(Ly/dy)                   # Number of grid cells in y-direction
 
 # Bottom friction
 const Cd = 3e-3                         # Quadratic drag coefficient []
+const  R = 5e-4                         # Linear drag coefficient []
+
+# Forcing Periodic
+const T  =   10days   
 
 gravitational_acceleration = 9.81
 coriolis = FPlane(f=10e-4)
 
-tmax =  120days                
-Δt   = 2seconds                 
+tmax =  120days             
+Δt   =    2seconds                 
 
 # create grid
 grid = RectilinearGrid(architecture,
@@ -95,7 +99,7 @@ function hᵢ(x, y)
         h =  DB + DS
     end
     if noise 
-        h += randn()*σ
+        h += (rand()-0.5)*σ
     end
     return h
 end
@@ -105,12 +109,17 @@ b(x, y) = -hᵢ(x, y)
             
 
 # define bottom drag for vector invariant formulation
-drag_u(x, y, t, u, v, h) = -Cd*√(u^2+v^2)*u/h
-drag_v(x, y, t, u, v, h) = -Cd*√(u^2+v^2)*v/h
+if linear_drag
+    drag_u(x, y, t, u, v, h) = -R*u/h
+    drag_v(x, y, t, u, v, h) = -R*v/h
+else
+    drag_u(x, y, t, u, v, h) = -Cd*√(u^2+v^2)*u/h
+    drag_v(x, y, t, u, v, h) = -Cd*√(u^2+v^2)*v/h
+end    
 
 # define surface stress functions
-increasing_surface_stress(t) = τ*tanh(t/(10days))
-varying_surface_stress(t) = τ*sin(2π*t/(20days))
+increasing_surface_stress(t) = τ*tanh(t/(T))
+varying_surface_stress(t) = τ*sin(2π*t/(T))
 
 # define total forcing
 τx(x, y, t, u, v, h) = drag_u(x, y, t, u, v, h) + varying_surface_stress(t)/h
