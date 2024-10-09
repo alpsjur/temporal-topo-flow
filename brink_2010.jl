@@ -23,15 +23,15 @@ end
 
 # Grid parameters
 dx =   1kilometer 
-dy = 1.5kilometers 
+dy =   1kilometers 
 Lx =  90kilometers
 Ly =  90kilometers
 Nx = Int(Lx/dx)
 Ny = Int(Ly/dy)
 
-# Simulation parameters
-tmax =  120days             
-Δt   =    2seconds                 
+# Simulation parameters           
+Δt   =    2seconds     
+tmax =  100days              
 
 # create grid
 grid = RectilinearGrid(architecture,
@@ -43,9 +43,9 @@ grid = RectilinearGrid(architecture,
 # Forcing parameters
 const ρ   = 1e3
 const d   = 0.1
-const T   = 4
+const T   = 4days
 const ω   = 2π/T
-const R = 5e-4  
+const R   = 5e-4  
 
 τS(t) = d*sin(ω*t)/ρ
 drag_u(x, y, t, u, v, h) = -R*u/h
@@ -67,9 +67,10 @@ const x2 = 60kilometers
 const A  = (h1-h0)/x1
 const B  = (h2-h1)/(x2-x1)
 
-const λ = 45kilometers
-const k = 2π/λ
-const γ = 0.3
+const λ  = 45kilometers
+const k  = 2π/λ
+const hc = 59meters
+const γ  = hc/h1
 
 G(y) = γ*sin(k*y)
 
@@ -115,6 +116,8 @@ axis = Axis(fig[1,1],
 
 depth = model.solution.h
 
+
+
 hm = heatmap!(axis, depth, colormap=:deep)
 Colorbar(fig[1, 2], hm, label = "Depth [m]")
 #contour!(axis, depth, levels=0:100:1000)
@@ -141,10 +144,18 @@ simulation.callbacks[:progress] = Callback(progress, IterationInterval(10day/Δt
 #output
 
 u, v, h = model.solution
-#bath = model.bathymetry
-simulation.output_writers[:fields] = JLD2OutputWriter(model, (; u, v, h),
-                                                    schedule = AveragedTimeInterval(12hours),
+bath = model.bathymetry
+η = h + bath
+
+simulation.output_writers[:fields] = JLD2OutputWriter(model, (; u, v, η),
+                                                    schedule = AveragedTimeInterval(1hours),
                                                     filename = "output/" * name * ".jld2",
+                                                    overwrite_existing = true)
+nothing
+
+simulation.output_writers[:bathymetry] = JLD2OutputWriter(model, (; bath),
+                                                    schedule = TimeInterval(tmax-Δt),
+                                                    filename = "output/" * name * "_bathymetry.jld2",
                                                     overwrite_existing = true)
 nothing
 
