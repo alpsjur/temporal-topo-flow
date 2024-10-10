@@ -31,7 +31,8 @@ Ny = Int(Ly/dy)
 
 # Simulation parameters           
 Δt   =    2seconds     
-tmax =  100days              
+tmax =  200days       
+#tmax =  3*Δt       
 
 # create grid
 grid = RectilinearGrid(architecture,
@@ -147,7 +148,13 @@ u, v, h = model.solution
 bath = model.bathymetry
 η = h + bath
 
-simulation.output_writers[:fields] = JLD2OutputWriter(model, (; u, v, η),
+# momentum terms
+∂η∂y = ∂y(η)
+∂v∂x = ∂x(v)
+u∂v∂x = u*∂v∂x
+
+
+simulation.output_writers[:fields] = JLD2OutputWriter(model, (; u, v, η, ∂η∂y, ∂v∂x, u∂v∂x),
                                                     schedule = AveragedTimeInterval(1hours),
                                                     filename = "output/" * name * ".jld2",
                                                     overwrite_existing = true)
