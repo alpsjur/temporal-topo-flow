@@ -51,7 +51,7 @@ for i in 1:length(times)
 end
 
 
-T = 4*24
+T = 4*4*24
 Tend = length(times)
 
 U = collect(mean(uc_timeseries.data[:,:,1,Tend-T:Tend], dims=3)[:,:,1])
@@ -63,7 +63,7 @@ V = collect(mean(vc_timeseries.data[:,:,1,Tend-T:Tend], dims=3)[:,:,1])
 
 
 fig = Figure(size = (600, 600));
-ax = Axis(fig[1, 1]) 
+ax = Axis(fig[1, 1], xlabel="x [km]", ylabel="y [km]") 
 limits!(ax, 0, xc[end], 0, yc[end])
 
 #hm_η = heatmap!(ax, xc, yc, Η; colorrange = (Ηmin, Ηmax), colormap = :balance)
