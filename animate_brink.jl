@@ -57,7 +57,7 @@ for i in 1:length(times)
 end
 
 # Initialize logging for the animation creation process
-@info "Plotting mean over a forcing period"
+@info "Animating "*filename
 
 # Create an observable integer `n` to index the time series data during animation
 n = Observable(1)
@@ -86,7 +86,7 @@ fig = Figure(size = (1200, 800))
 # Create axes for each subplot with appropriate titles
 ax2 = Axis(fig[2:4, 1]; title = "velocity [m s-1]", xlabel="x [km]", ylabel="y [km]")     # Axis for velocity plot
 ax3 = Axis(fig[2:4, 2]; title = "sea surface height [m]", xlabel="x [km]", ylabel="y [km]")      # Axis for vorticity plot
-ax4 = Axis(fig[6, 1:2]; title = "area mean u", xlabel="time [days]", ylabel="[m s-1]")  # Axis for mean u-velocity plot
+ax4 = Axis(fig[6, 1:2]; title = "area mean v", xlabel="time [days]", ylabel="[m s-1]")  # Axis for mean u-velocity plot
 
 # Add a label for the figure title that will dynamically update with the time variable
 fig[1, :] = Label(fig, title, fontsize=24, tellwidth=false)
@@ -95,11 +95,9 @@ hm_s = heatmap!(ax2, xc, yc, sₙ; colorrange = (0, slim), colormap = :speed)
 Colorbar(fig[5, 1], hm_s, vertical=false)
 
 # Overlay arrows representing velocity vectors on the speed plot
-ar = arrows!(ax2, xc[step/2:step:end], yc[step/2:step:end], ucₙ, vcₙ, 
-    lengthscale = 2e3,
+ar = arrows!(ax2, xc[Integer(step/2):step:end], yc[Integer(step/2):step:end], ucₙ, vcₙ, 
+    lengthscale = 1,
     normalize = true,
-    # Optional color settings commented out for arrow visualization
-    # arrowcolor = sₙ, linecolor = sₙ, colorrange = (0, slim), colormap = :speed
 )
 
 hm_η = heatmap!(ax3, xc, yc, ηₙ; colorrange = (ηmin, ηmax), colormap = :balance)
