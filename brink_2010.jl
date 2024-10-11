@@ -32,7 +32,7 @@ Ny = Int(Ly/dy)
 # Simulation parameters           
 Δt   =    2seconds     
 tmax =  200days       
-#tmax =  3*Δt       
+#tmax =   4days#3*Δt       
 
 # create grid
 grid = RectilinearGrid(architecture,
@@ -48,13 +48,13 @@ const T   = 4days
 const ω   = 2π/T
 const R   = 5e-4  
 
-τS(t) = d*sin(ω*t)/ρ
-drag_u(x, y, t, u, v, h) = -R*u/h
-drag_v(x, y, t, u, v, h) = -R*v/h
+@inline τS(t) = d*sin(ω*t)/ρ
+@inline drag_u(x, y, t, u, v, h) = -R*u/h
+@inline drag_v(x, y, t, u, v, h) = -R*v/h
 
 # define total forcing
-τx(x, y, t, u, v, h) = drag_u(x, y, t, u, v, h) 
-τy(x, y, t, u, v, h) = drag_v(x, y, t, u, v, h) + τS(t)/h
+@inline τx(x, y, t, u, v, h) = drag_u(x, y, t, u, v, h) 
+@inline τy(x, y, t, u, v, h) = drag_v(x, y, t, u, v, h) + τS(t)/h
 u_forcing = Forcing(τx, field_dependencies=(:u, :v, :h))
 v_forcing = Forcing(τy, field_dependencies=(:u, :v, :h))
 
@@ -86,16 +86,56 @@ function hᵢ(x, y)
     return h
 end
 
-b(x, y) = -hᵢ(x, y)
+@inline b(x, y) = -hᵢ(x, y)
 
 # Model parameters
 gravitational_acceleration = 9.81
 coriolis = FPlane(f=10e-4)
 
+# Define speed of gravity wave
+c = sqrt(gravitational_acceleration*(hA + h2))
+
+
+# Trying to implement gradient boundary condition
+# auxiliary_u = XFaceField(grid)
+# auxiliary_v = YFaceField(grid)
+# auxiliary_h = CenterField(grid)
+
+# function copy_fields!(sim)
+#     model = sim.model
+#     solution = model.solution
+#     parent(auxiliary_u) .= parent(solution.u)
+#     parent(auxiliary_v) .= parent(solution.v)
+#     parent(auxiliary_h) .= parent(solution.h)
+#     return nothing
+# end
+
+# @inline dhdx(j, k, grid, clock, model_fields, c) = -5e3
+# @inbounds (auxiliary_u[90, j, k]*auxiliary_h[90, j, k]
+#     -auxiliary_u[89, j, k]*auxiliary_h[89, j, k]
+#     +auxiliary_v[90, j, k]*auxiliary_h[90, j, k]
+#     -auxiliary_v[90, j-1, k]*auxiliary_h[90, j-1, k])/(1e3*c)
+
+# radiative_bc = GradientBoundaryCondition(dhdx, discrete_form=true, parameters=c)
+
+
+@inline hflux(y, t, h, c) = (h-1000)*c
+    
+
+flux_bc = FluxBoundaryCondition(hflux, field_dependencies=:h, parameters=c)
+h_bcs = FieldBoundaryConditions(FluxBoundaryCondition(nothing), east=flux_bc)
+
+free_slip_bc = FluxBoundaryCondition(nothing)
+free_slip_field_bcs = FieldBoundaryConditions(free_slip_bc)
+
 # Create model
 model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration,
                           momentum_advection = VectorInvariant(),
                           bathymetry = b,
+                          boundary_conditions = (u = free_slip_field_bcs, 
+                                                 v = free_slip_field_bcs, 
+                                                 h = h_bcs
+                                                 ),
                           #closure = ShallowWaterScalarDiffusivity(ν=1e-4, ξ=1e-4),
                           formulation = VectorInvariantFormulation(),                  
                           forcing = (u=u_forcing,v=v_forcing),
@@ -128,6 +168,10 @@ save(figurepath*name*"_bathymetry.png", fig)
 # initialize simulations
 simulation = Simulation(model, Δt=Δt, stop_time=tmax)
 
+# Trying to implement gradient boundary condition
+# using Oceananigans: UpdateStateCallsite
+#simulation.callbacks[:copy_fields] = Callback(copy_fields!, callsite=UpdateStateCallsite())
+
 
 # logging simulation progress
 start_time = time_ns()
@@ -143,7 +187,6 @@ progress(sim) = @printf(
 simulation.callbacks[:progress] = Callback(progress, IterationInterval(10day/Δt))
 
 #output
-
 u, v, h = model.solution
 bath = model.bathymetry
 η = h + bath
