@@ -51,7 +51,7 @@ for i in 1:length(times)
 end
 
 
-T = 4*4*24
+T = 30*4*24
 Tend = length(times)
 
 U = collect(mean(uc_timeseries.data[:,:,1,Tend-T:Tend], dims=3)[:,:,1])

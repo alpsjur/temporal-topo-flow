@@ -37,7 +37,7 @@ xc = xc/1e3
 yc = yc/1e3
 
 
-T = 2*24
+T = 30*4*24
 Tend = length(times)
 
 
@@ -65,7 +65,7 @@ TFS1 = (∂η∂yc.*h)[:,:,1,:]
 TFS2 = mean(∂η∂yc.data[:,:,1,Tend-T:Tend], dims=(2,3))[:,1,1].*mean(h,dims=2)
 TFS = (mean(TFS1, dims=(2,3))[:,1,1] - TFS2)[:,1].*g
 
-BS = mean(uc.data[:,:,1,Tend-T:Tend], dims=(2,3))[:,1,1].*R
+BS = mean(vc.data[:,:,1,Tend-T:Tend], dims=(2,3))[:,1,1].*R
 
 # ubar = mean(u.data[:,:,1,Tend-T:Tend], dims=(2,3))[:,1,1]
 # vbar = mean(v.data[:,:,1,Tend-T:Tend], dims=(2,3))[:,1,1]
@@ -92,14 +92,14 @@ BS = mean(uc.data[:,:,1,Tend-T:Tend], dims=(2,3))[:,1,1].*R
 
 # unod = (unod[2:end,:,:] + unod[1:end-1,:,:])/2
 
-#FS = mean(hnod.*ηnoddy.*g, dims=(2,3))[:,1,1]
+#TFS = mean(hnod.*ηnoddy.*g, dims=(2,3))[:,1,1]
 #MT = mean(unod.*vnoddx, dims=(2,3))[:,1,1].*hbar
 #BS = R*vbar
 
 
 fig = Figure(size = (800, 600));
 ax = Axis(fig[1, 1], xlabel="x [km]", ylabel="Terms [m2 s-2]") 
-lines!(ax, xc, FS, label="Form stress")
+lines!(ax, xc, TFS, label="Form stress")
 lines!(ax, xc, MT, label="Momentum transport")
 lines!(ax, xc, BS, label="Bottom stress")
 
