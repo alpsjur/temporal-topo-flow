@@ -10,29 +10,53 @@ using Printf                   # formatting text
 using CUDA                     # for running on GPU
 using CairoMakie               # plotting
 
-name = "brink_2010-300"
-
 # Run on GPU (wow, fast!) if available. Else run on CPU
-if CUDA.functional()
-    architecture = GPU()
-    @info "Running on GPU"
-else
-    architecture = CPU()
-    @info "Running on CPU"
-end
+architecture = CUDA.functional() ? GPU() : CPU()
+@info "Running on $(CUDA.functional() ? "GPU" : "CPU")"
+
+# Run name
+name = "brink_2010-300"
 
 # Grid parameters
 dx =   1kilometer 
 dy =   1kilometers 
 Lx =  90kilometers
 Ly =  90kilometers
-Nx = Int(Lx/dx)
-Ny = Int(Ly/dy)
 
 # Simulation parameters           
 Δt   =    2seconds     
-tmax =  200days       
-#tmax =   4days#3*Δt       
+tmax =  200days      
+
+# Forcing parameters
+ρ   = 1e3
+d   = 0.1
+T   = 4days
+R   = 5e-4  
+   
+# Bathymetry parameters
+hA = 0
+h0 = 25meters
+h1 = 100meters
+h2 = 1000meters
+x1 = 40kilometers 
+x2 = 60kilometers
+
+λ  = 45kilometers
+hc = 59meters
+
+# overwrite parameters with configuration file, if provided
+if length(ARGS)==1
+    include(ARGS[1])
+end
+
+# parameters based on provided parameters
+ω   = 2π/T
+γ  = hc/h1
+k  = 2π/λ
+A  = (h1-h0)/x1
+B  = (h2-h1)/(x2-x1)
+Nx = Int(Lx/dx)
+Ny = Int(Ly/dy)
 
 # create grid
 grid = RectilinearGrid(architecture,
@@ -41,52 +65,35 @@ grid = RectilinearGrid(architecture,
                        topology = (Bounded, Periodic, Flat),
                        )
 
-# Forcing parameters
-const ρ   = 1e3
-const d   = 0.1
-const T   = 4days
-const ω   = 2π/T
-const R   = 5e-4  
-
-@inline τS(t) = d*sin(ω*t)/ρ
-@inline drag_u(x, y, t, u, v, h) = -R*u/h
-@inline drag_v(x, y, t, u, v, h) = -R*v/h
+# define forcing functions                       
+@inline τS(t, p) = p.d*sin(p.ω*t)/p.ρ
+@inline drag_u(x, y, t, u, v, h, p) = -p.R*u/h
+@inline drag_v(x, y, t, u, v, h, p) = -p.R*v/h
 
 # define total forcing
-@inline τx(x, y, t, u, v, h) = drag_u(x, y, t, u, v, h) 
-@inline τy(x, y, t, u, v, h) = drag_v(x, y, t, u, v, h) + τS(t)/h
-u_forcing = Forcing(τx, field_dependencies=(:u, :v, :h))
-v_forcing = Forcing(τy, field_dependencies=(:u, :v, :h))
+@inline τx(x, y, t, u, v, h, p) = drag_u(x, y, t, u, v, h, p) 
+@inline τy(x, y, t, u, v, h, p) = drag_v(x, y, t, u, v, h, p) + τS(t, p)/h
+u_forcing = Forcing(τx, field_dependencies=(:u, :v, :h), parameters=(; R))
+v_forcing = Forcing(τy, field_dependencies=(:u, :v, :h), parameters =(; ρ, d, T, ω, R))
 
-# Bathymetry parameters
-const hA = 0
-const h0 = 25meters
-const h1 = 100meters
-const h2 = 1000meters
-const x1 = 40kilometers 
-const x2 = 60kilometers
-const A  = (h1-h0)/x1
-const B  = (h2-h1)/(x2-x1)
 
-const λ  = 45kilometers
-const k  = 2π/λ
-const hc = 59meters
-const γ  = hc/h1
+# define bathymetry functions
+G(y, p) = p.γ*sin(p.k*y)
 
-G(y) = γ*sin(k*y)
-
-function hᵢ(x, y)
-    if x < x1
-        h = hA + h0 + A*x + h1*G(y)*x/x1
-    elseif x < x2
-        h = hA + h1 + B*(x-x1) + h1*G(y)*(x2-x)/(x2-x1)
+function hᵢ(x, y, p)
+    if x < p.x1
+        h = p.hA + p.h0 + p.A*x + p.h1*G(y, p)*x/p.x1
+    elseif x < p.x2
+        h = p.hA + p.h1 + B*(x-p.x1) + p.h1*G(y, p)*(p.x2-x)/(p.x2-p.x1)
     else
-        h = hA + h2
+        h = p.hA + p.h2
     end
     return h
 end
 
+@inline hᵢ(x, y) = hᵢ(x, y, (; hA, h0, h1, h2, x1, x2, A, B, λ, k, γ))
 @inline b(x, y) = -hᵢ(x, y)
+
 
 # Model parameters
 gravitational_acceleration = 9.81
@@ -119,10 +126,10 @@ c = sqrt(gravitational_acceleration*(hA + h2))
 # radiative_bc = GradientBoundaryCondition(dhdx, discrete_form=true, parameters=c)
 
 
-@inline hflux(y, t, h, c) = (h-1000)*c
+@inline hflux(y, t, h, p) = (h - p.hA - p.h2)*p.c
     
 
-flux_bc = FluxBoundaryCondition(hflux, field_dependencies=:h, parameters=c)
+flux_bc = FluxBoundaryCondition(hflux, field_dependencies=:h, parameters=(; c, hA, h2))
 h_bcs = FieldBoundaryConditions(FluxBoundaryCondition(nothing), east=flux_bc)
 
 free_slip_bc = FluxBoundaryCondition(nothing)
@@ -130,7 +137,9 @@ free_slip_field_bcs = FieldBoundaryConditions(free_slip_bc)
 
 # Create model
 model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration,
-                          momentum_advection = VectorInvariant(),
+                          momentum_advection = VectorInvariant(
+                            #vorticity_scheme=WENO()
+                            ),
                           bathymetry = b,
                           boundary_conditions = (u = free_slip_field_bcs, 
                                                  v = free_slip_field_bcs, 
@@ -146,7 +155,7 @@ model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration,
 set!(model, h=hᵢ)
 
 # plot bathymetry
-figurepath = "figures/"
+figurepath = "figures/brink/"
 fig = Figure(size = (800, 800))
 axis = Axis(fig[1,1], 
         aspect = DataAspect(),
@@ -208,5 +217,7 @@ simulation.output_writers[:bathymetry] = JLD2OutputWriter(model, (; bath),
                                                     filename = "output/" * name * "_bathymetry.jld2",
                                                     overwrite_existing = true)
 nothing
+
+@info "Starting configuration " * name
 
 run!(simulation)
