@@ -6,8 +6,8 @@ using JLD2              # For saving and loading simulation data in Julia format
 using Statistics
 
 # Define file path and name of the saved simulation output
-filepath = "output/"
-figurepath = "figures/"
+filepath = "output/brink/"
+figurepath = "figures/brink/"
 
 filename = "brink_2010-300"
 
@@ -21,7 +21,7 @@ dx = 1e3
 full_output = FieldDataset(filepath * filename * ".jld2")
 u = full_output.u # u-component of velocity field
 v = full_output.v  # v-component of velocity field
-η = full_output.η  # height (or depth) field
+η = full_output.η  # sea surface height field
 h = - FieldDataset(filepath * filename * "_bathymetry.jld2").bath[:,:,1,1]
 u∂v∂x = full_output.u∂v∂x
 ∂v∂x = full_output.∂v∂x
@@ -102,6 +102,7 @@ ax = Axis(fig[1, 1], xlabel="x [km]", ylabel="Terms [m2 s-2]")
 lines!(ax, xc, TFS, label="Form stress")
 lines!(ax, xc, MT, label="Momentum transport")
 lines!(ax, xc, BS, label="Bottom stress")
+limits!(ax, 0, 90, nothing, nothing)
 
 axislegend(position = :rb)
 

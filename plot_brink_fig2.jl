@@ -6,10 +6,9 @@ using JLD2              # For saving and loading simulation data in Julia format
 using Statistics
 
 # Define file path and name of the saved simulation output
-filepath = "output/"
-figurepath = "figures/"
-#fullfilename = ARGS[1]
-#filename = split(fullfilename, "/")[end][1:end-3]
+filepath = "output/brink/"
+figurepath = "figures/brink/"
+
 filename = "brink_2010-300"
 
 # Visualization step interval for vector fields
@@ -64,7 +63,7 @@ V = collect(mean(vc_timeseries.data[:,:,1,Tend-T:Tend], dims=3)[:,:,1])
 
 fig = Figure(size = (600, 600));
 ax = Axis(fig[1, 1], xlabel="x [km]", ylabel="y [km]") 
-limits!(ax, 0, xc[end], 0, yc[end])
+limits!(ax, 0, 90, 0, yc[end])
 
 #hm_η = heatmap!(ax, xc, yc, Η; colorrange = (Ηmin, Ηmax), colormap = :balance)
 #Colorbar(fig[2, 1], hm_η, vertical=false)

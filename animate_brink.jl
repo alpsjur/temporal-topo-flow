@@ -7,10 +7,10 @@ using Statistics        # For statistical calculations
 using RollingFunctions  # For applying rolling window functions
 
 # Define file path and name of the saved simulation output
-filepath = "output/"
+filepath = "output/brink/"
 #fullfilename = ARGS[1]
 #filename = split(fullfilename, "/")[end][1:end-3]
-filename = "brink_2010-300"
+filename = "brink_2010-300-extended"
 
 # Visualization step interval for vector fields
 step = 4
@@ -112,7 +112,7 @@ limits!(ax4, 0, days[end], -Vlim, Vlim)  # Set axis limits based on time and vel
 frames = 1:length(times)
 
 # Record the animation, updating the figure for each time step
-CairoMakie.record(fig, "animations/" * filename * ".mp4", frames, framerate = 24) do i
+CairoMakie.record(fig, "animations/brink/" * filename * ".mp4", frames, framerate = 24) do i
     msg = string("Plotting frame ", i, " of ", frames[end])
     print(msg * " \r")  # Log progress without creating a new line for each frame
     n[] = i             # Update the observable `n` to the current frame index
@@ -123,3 +123,4 @@ CairoMakie.record(fig, "animations/" * filename * ".mp4", frames, framerate = 24
     pointsV[] = push!(pointsV[], new_pointV)
     pointsVres[] = push!(pointsVres[], new_pointVres)
 end
+s
