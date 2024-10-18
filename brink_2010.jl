@@ -11,8 +11,13 @@ using CUDA                     # for running on GPU
 using CairoMakie               # plotting
 
 # Run on GPU (wow, fast!) if available. Else run on CPU
-architecture = CUDA.functional() ? GPU() : CPU()
-@info "Running on $(CUDA.functional() ? "GPU" : "CPU")"
+if CUDA.functional()
+    architecture = GPU()
+    @info "Running on GPU"
+else
+    architecture = CPU()
+    @info "Running on CPU"
+end
 
 # Run name
 name = "brink_2010-300"
@@ -20,7 +25,7 @@ name = "brink_2010-300"
 # Grid parameters
 dx =   1kilometer 
 dy =   1kilometers 
-Lx =  90kilometers
+Lx = 120kilometers
 Ly =  90kilometers
 
 # Simulation parameters           
@@ -32,6 +37,7 @@ tmax =  200days
 d   = 0.1
 T   = 4days
 R   = 5e-4  
+switch = nothing
    
 # Bathymetry parameters
 hA = 0
@@ -44,7 +50,11 @@ x2 = 60kilometers
 λ  = 45kilometers
 hc = 59meters
 
-# overwrite parameters with configuration file, if provided
+# define total forcing
+τx(x, y, t, u, v, h, p) = -p.R*u/h
+τy(x, y, t, u, v, h, p) = -p.R*v/h + p.d*sin(p.ω*t)/(p.ρ*h)
+
+# overwrite parameters and functions with configuration file, if provided
 if length(ARGS)==1
     include(ARGS[1])
 end
@@ -65,34 +75,31 @@ grid = RectilinearGrid(architecture,
                        topology = (Bounded, Periodic, Flat),
                        )
 
-# define forcing functions                       
-@inline τS(t, p) = p.d*sin(p.ω*t)/p.ρ
-@inline drag_u(x, y, t, u, v, h, p) = -p.R*u/h
-@inline drag_v(x, y, t, u, v, h, p) = -p.R*v/h
+# Set up parameters given to forcing function                   
+τx_parameters = (; R)
+τy_parameters = (; ρ, d, ω, R, switch)
 
-# define total forcing
-@inline τx(x, y, t, u, v, h, p) = drag_u(x, y, t, u, v, h, p) 
-@inline τy(x, y, t, u, v, h, p) = drag_v(x, y, t, u, v, h, p) + τS(t, p)/h
-u_forcing = Forcing(τx, field_dependencies=(:u, :v, :h), parameters=(; R))
-v_forcing = Forcing(τy, field_dependencies=(:u, :v, :h), parameters =(; ρ, d, T, ω, R))
+# define forcing field from forcing functions
+u_forcing = Forcing(τx, field_dependencies=(:u, :v, :h), parameters=τx_parameters)
+v_forcing = Forcing(τy, field_dependencies=(:u, :v, :h), parameters=τy_parameters)
 
 
 # define bathymetry functions
-G(y, p) = p.γ*sin(p.k*y)
+G(y, γ, k) = γ*sin(k*y)
 
 function hᵢ(x, y, p)
     if x < p.x1
-        h = p.hA + p.h0 + p.A*x + p.h1*G(y, p)*x/p.x1
+        h = p.hA + p.h0 + p.A*x + p.h1*G(y, p.γ, p.k)*x/p.x1
     elseif x < p.x2
-        h = p.hA + p.h1 + B*(x-p.x1) + p.h1*G(y, p)*(p.x2-x)/(p.x2-p.x1)
+        h = p.hA + p.h1 + B*(x-p.x1) + p.h1*G(y, p.γ, p.k)*(p.x2-x)/(p.x2-p.x1)
     else
         h = p.hA + p.h2
     end
     return h
 end
 
-@inline hᵢ(x, y) = hᵢ(x, y, (; hA, h0, h1, h2, x1, x2, A, B, λ, k, γ))
-@inline b(x, y) = -hᵢ(x, y)
+hᵢ(x, y) = hᵢ(x, y, (; hA, h0, h1, h2, x1, x2, A, B, λ, k, γ))
+b(x, y) = -hᵢ(x, y)
 
 
 # Model parameters
@@ -126,7 +133,7 @@ c = sqrt(gravitational_acceleration*(hA + h2))
 # radiative_bc = GradientBoundaryCondition(dhdx, discrete_form=true, parameters=c)
 
 
-@inline hflux(y, t, h, p) = (h - p.hA - p.h2)*p.c
+hflux(y, t, h, p) = (h - p.hA - p.h2)*p.c
     
 
 flux_bc = FluxBoundaryCondition(hflux, field_dependencies=:h, parameters=(; c, hA, h2))
@@ -141,11 +148,12 @@ model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration,
                             #vorticity_scheme=WENO()
                             ),
                           bathymetry = b,
-                          boundary_conditions = (u = free_slip_field_bcs, 
-                                                 v = free_slip_field_bcs, 
-                                                 h = h_bcs
-                                                 ),
+                        #   boundary_conditions = (u = free_slip_field_bcs, 
+                        #                          v = free_slip_field_bcs, 
+                        #                          h = h_bcs
+                        #                          ),
                           #closure = ShallowWaterScalarDiffusivity(ν=1e-4, ξ=1e-4),
+                          #closure = AnisotropicMinimumDissipation(),
                           formulation = VectorInvariantFormulation(),                  
                           forcing = (u=u_forcing,v=v_forcing),
                           )
@@ -155,7 +163,7 @@ model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration,
 set!(model, h=hᵢ)
 
 # plot bathymetry
-figurepath = "figures/brink/"
+figurepath = "figures/brink/bathymetry/"
 fig = Figure(size = (800, 800))
 axis = Axis(fig[1,1], 
         aspect = DataAspect(),
@@ -185,20 +193,23 @@ simulation = Simulation(model, Δt=Δt, stop_time=tmax)
 # logging simulation progress
 start_time = time_ns()
 progress(sim) = @printf(
-    "i: %10d, sim time: % 12s, min(u): %4.3f ms⁻¹, max(u): %4.3f ms⁻¹, wall time: %12s\n",
+    "i: %10d, sim time: % 12s, min(v): %4.3f ms⁻¹, max(v): %4.3f ms⁻¹, wall time: %12s\n",
     sim.model.clock.iteration,
     prettytime(sim.model.clock.time),
-    minimum(u),
-    maximum(u),
+    minimum(v),
+    maximum(v),
     prettytime(1e-9 * (time_ns() - start_time))
 )
 
-simulation.callbacks[:progress] = Callback(progress, IterationInterval(10day/Δt))
+simulation.callbacks[:progress] = Callback(progress, IterationInterval(10days/Δt))
 
 #output
 u, v, h = model.solution
 bath = model.bathymetry
 η = h + bath
+
+∂b∂x = ∂x(bath)
+∂b∂y = ∂y(bath)
 
 # momentum terms
 ∂η∂y = ∂y(η)
@@ -208,13 +219,13 @@ u∂v∂x = u*∂v∂x
 
 simulation.output_writers[:fields] = JLD2OutputWriter(model, (; u, v, η, ∂η∂y, ∂v∂x, u∂v∂x),
                                                     schedule = AveragedTimeInterval(1hours),
-                                                    filename = "output/" * name * ".jld2",
+                                                    filename = "output/brink/" * name * ".jld2",
                                                     overwrite_existing = true)
 nothing
 
-simulation.output_writers[:bathymetry] = JLD2OutputWriter(model, (; bath),
+simulation.output_writers[:bathymetry] = JLD2OutputWriter(model, (; bath, ∂b∂x, ∂b∂y),
                                                     schedule = TimeInterval(tmax-Δt),
-                                                    filename = "output/" * name * "_bathymetry.jld2",
+                                                    filename = "output/brink/" * name * "_bathymetry.jld2",
                                                     overwrite_existing = true)
 nothing
 
