@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the filename variable
-FILENAME="shallow_water.jl"
+FILENAME="brink_2010.jl"
 
 SUCSESS="Skript ferdig! :) \n\nHilsen\n$(hostname)"
 FAIL="Oi, nå har det skjedd noe galt. Skript feila :( \nDet går bra, dette fikser du! \n\nHilsen\n$(hostname)"

@@ -9,10 +9,11 @@ using Statistics
 filepath = "output/brink/"
 figurepath = "figures/brink/"
 
-filename = "brink_2010-300"
+filename = "brink_2010-300-period_04"
 
 # Visualization step interval for vector fields
 step = 4
+stepstart = 1
 
 
 # Load time series data from the saved JLD2 file
@@ -50,7 +51,7 @@ for i in 1:length(times)
 end
 
 
-T = 30*4*24
+T = 64*24
 Tend = length(times)
 
 U = collect(mean(uc_timeseries.data[:,:,1,Tend-T:Tend], dims=3)[:,:,1])
@@ -70,7 +71,7 @@ limits!(ax, 0, 90, 0, yc[end])
 contour!(ax, xc, yc, Η; color=:black, linewidth = 5)
 
 # Overlay arrows representing velocity vectors on the speed plot
-ar = arrows!(ax, xc[2:step:end], yc[2:step:end], U[2:step:end,2:step:end], V[2:step:end,2:step:end], 
+ar = arrows!(ax, xc[stepstart:step:end], yc[stepstart:step:end], U[stepstart:step:end,stepstart:step:end], V[stepstart:step:end,1:step:end], 
     lengthscale = 5e2,
     #normalize = true,
 )

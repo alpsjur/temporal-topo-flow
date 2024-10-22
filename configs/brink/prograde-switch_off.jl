@@ -3,9 +3,8 @@ using Oceananigans.Units
 name = "brink_2010-prograde-switch_off"
 
 # forcing parameters 
-R      = 5e-4  
 switch = 10days
-tmax   = 30days
+tmax   = 60days
 
 
 # define prograde forcing which switches off

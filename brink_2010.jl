@@ -148,10 +148,10 @@ model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration,
                             #vorticity_scheme=WENO()
                             ),
                           bathymetry = b,
-                        #   boundary_conditions = (u = free_slip_field_bcs, 
-                        #                          v = free_slip_field_bcs, 
-                        #                          h = h_bcs
-                        #                          ),
+                          boundary_conditions = (u = free_slip_field_bcs, 
+                                                 v = free_slip_field_bcs, 
+                                                 h = h_bcs
+                                                 ),
                           #closure = ShallowWaterScalarDiffusivity(ν=1e-4, ξ=1e-4),
                           #closure = AnisotropicMinimumDissipation(),
                           formulation = VectorInvariantFormulation(),                  
@@ -208,8 +208,10 @@ u, v, h = model.solution
 bath = model.bathymetry
 η = h + bath
 
+
 ∂b∂x = ∂x(bath)
 ∂b∂y = ∂y(bath)
+ω = Field(∂x(v) - ∂y(u))
 
 # momentum terms
 ∂η∂y = ∂y(η)
@@ -217,7 +219,7 @@ bath = model.bathymetry
 u∂v∂x = u*∂v∂x
 
 
-simulation.output_writers[:fields] = JLD2OutputWriter(model, (; u, v, η, ∂η∂y, ∂v∂x, u∂v∂x),
+simulation.output_writers[:fields] = JLD2OutputWriter(model, (; u, v, η, ω, ∂η∂y, ∂v∂x, u∂v∂x),
                                                     schedule = AveragedTimeInterval(1hours),
                                                     filename = "output/brink/" * name * ".jld2",
                                                     overwrite_existing = true)

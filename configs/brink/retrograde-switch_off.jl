@@ -2,10 +2,9 @@ using Oceananigans.Units
 
 name = "brink_2010-retrograde-switch_off"
 
-# forcing parameters 
-R      = 5e-4  
+# forcing parameters  
 switch = 10days
-tmax   = 30days
+tmax   = 60days
 
 
 # define retrograde forcing which switches off

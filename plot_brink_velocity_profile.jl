@@ -9,7 +9,7 @@ using Statistics
 filepath = "output/brink/"
 figurepath = "figures/brink/"
 
-filename = "brink_2010-300"
+filename = "brink_2010-300-period_04"
 
 # Load time series data from the saved JLD2 file
 full_output = FieldDataset(filepath * filename * ".jld2")
@@ -28,7 +28,7 @@ xc = xc/1e3
 yc = yc/1e3
 
 
-T = 30*4*24
+T = 64*24
 Tend = length(times)
 
 # Center all fields 

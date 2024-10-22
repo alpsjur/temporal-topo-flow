@@ -1,11 +1,10 @@
 using Oceananigans.Units
 
-name = "brink_2010-prograde-switch_off"
+name = "brink_2010-prograde-switch_off-hres"
 
 # forcing parameters 
-R      = 5e-4  
 switch = 10days
-tmax   = 30days
+tmax   = 60days
 dx     = 500meters 
 dy     = 500meters
 
