@@ -10,7 +10,7 @@ using RollingFunctions  # For applying rolling window functions
 filepath = "output/brink/"
 #fullfilename = ARGS[1]
 #filename = split(fullfilename, "/")[end][1:end-3]
-filename = "brink_2010-300-period_64"
+filename = "brink_2010-300-period_08"
 
 # Visualization step interval for vector fields
 step = 4
@@ -87,7 +87,7 @@ fig = Figure(size = (1200, 800))
 # Create axes for each subplot with appropriate titles
 ax2 = Axis(fig[2:4, 1]; title = "velocity [m s-1]", xlabel="x [km]", ylabel="y [km]", aspect=DataAspect())     # Axis for velocity plot
 ax3 = Axis(fig[2:4, 2]; title = "sea surface height [m]", xlabel="x [km]", ylabel="y [km]", aspect=DataAspect())      # Axis for vorticity plot
-ax4 = Axis(fig[6, 1:2]; title = "area mean v", xlabel="time [days]", ylabel="[m s-1]", aspect=DataAspect())  # Axis for mean u-velocity plot
+ax4 = Axis(fig[6, 1:2]; title = "area mean v", xlabel="time [days]", ylabel="[m s-1]")  # Axis for mean u-velocity plot
 
 # Add a label for the figure title that will dynamically update with the time variable
 fig[1, :] = Label(fig, title, fontsize=24, tellwidth=false)
@@ -101,7 +101,7 @@ ar = arrows!(ax2, xc[Integer(step/2):step:end], yc[Integer(step/2):step:end], uc
     normalize = true,
 )
 
-hm_η = heatmap!(ax3, xc, yc, ηₙ; colorrange = (ηmin, ηmax), colormap = :balance)
+hm_η = heatmap!(ax3, xc, yc, ηₙ; colorrange = (ηmin, ηmax), colormap = :thermal)
 Colorbar(fig[5, 2], hm_η, vertical=false)
 
 # Scatter plots for raw and smoothed velocity data
@@ -114,8 +114,8 @@ frames = 1:length(times)
 
 # Record the animation, updating the figure for each time step
 CairoMakie.record(fig, "animations/brink/" * filename * ".mp4", frames, framerate = 24) do i
-    msg = string("Plotting frame ", i, " of ", frames[end])
-    print(msg * " \r")  # Log progress without creating a new line for each frame
+    #msg = string("Plotting frame ", i, " of ", frames[end])
+    #print(msg * " \r")  # Log progress without creating a new line for each frame
     n[] = i             # Update the observable `n` to the current frame index
 
     # Update points for raw and smoothed velocity plots

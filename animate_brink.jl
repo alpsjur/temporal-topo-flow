@@ -10,10 +10,10 @@ using RollingFunctions  # For applying rolling window functions
 filepath = "output/brink/"
 #fullfilename = ARGS[1]
 #filename = split(fullfilename, "/")[end][1:end-3]
-filename = "brink_2010-prograde-switch_off-hres"
+filename = "brink_2010-retrograde-switch_off"
 
 # Visualization step interval for vector fields
-step = 8
+step = 4
 
 # Load time series data from the saved JLD2 file
 u_timeseries = FieldTimeSeries(filepath * filename * ".jld2", "u")  # u-component of velocity field
@@ -98,7 +98,7 @@ ar = arrows!(ax2, xc[Integer(step/2):step:end], yc[Integer(step/2):step:end], uc
     normalize = true,
 )
 
-hm_η = heatmap!(ax3, xc, yc, ηₙ; colorrange = (ηmin, ηmax), colormap = :amp)
+hm_η = heatmap!(ax3, xc, yc, ηₙ; colorrange = (ηmin, ηmax), colormap = :thermal)
 Colorbar(fig[5, 2], hm_η, vertical=false)
 
 hm_ω = heatmap!(ax4, xc, yc, ωₙ; colorrange = (-ωlim, ωlim), colormap = :curl)
