@@ -1,6 +1,6 @@
 using Oceananigans.Units
 
-name = "brink_2010-retrograde-switch_off-hres"
+name = "brink_2010-retrograde-switch_off-500m_res"
 
 # forcing parameters 
 switch = 10days

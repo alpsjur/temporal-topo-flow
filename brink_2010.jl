@@ -25,7 +25,7 @@ name = "brink_2010-300"
 # Grid parameters
 dx =   1kilometer 
 dy =   1kilometers 
-Lx = 120kilometers
+Lx =  90kilometers
 Ly =  90kilometers
 
 # Simulation parameters           
