@@ -25,7 +25,7 @@ name = "brink_2010-300"
 # Grid parameters
 dx =   1kilometer 
 dy =   1kilometers 
-Lx =  90kilometers
+Lx = 120kilometers
 Ly =  90kilometers
 
 # Simulation parameters           
@@ -148,10 +148,10 @@ model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration,
                             #vorticity_scheme=WENO()
                             ),
                           bathymetry = b,
-                          boundary_conditions = (u = free_slip_field_bcs, 
-                                                 v = free_slip_field_bcs, 
-                                                 h = h_bcs
-                                                 ),
+                        #   boundary_conditions = (u = free_slip_field_bcs, 
+                        #                          v = free_slip_field_bcs, 
+                        #                          h = h_bcs
+                        #                          ),
                           #closure = ShallowWaterScalarDiffusivity(ν=1e-4, ξ=1e-4),
                           #closure = AnisotropicMinimumDissipation(),
                           formulation = VectorInvariantFormulation(),                  

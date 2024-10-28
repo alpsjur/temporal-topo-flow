@@ -94,7 +94,7 @@ Colorbar(fig[5, 1], hm_s, vertical=false)
 
 # Overlay arrows representing velocity vectors on the speed plot
 ar = arrows!(ax2, xc[Integer(step/2):step:end], yc[Integer(step/2):step:end], ucₙ, vcₙ, 
-    lengthscale = 1,
+    lengthscale = 2,
     normalize = true,
 )
 

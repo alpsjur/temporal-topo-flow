@@ -10,7 +10,7 @@ using RollingFunctions  # For applying rolling window functions
 filepath = "output/brink/"
 #fullfilename = ARGS[1]
 #filename = split(fullfilename, "/")[end][1:end-3]
-filename = "brink_2010-300-period_08"
+filename = "brink_2010-300-period_02"
 
 # Visualization step interval for vector fields
 step = 4
@@ -97,7 +97,7 @@ Colorbar(fig[5, 1], hm_s, vertical=false)
 
 # Overlay arrows representing velocity vectors on the speed plot
 ar = arrows!(ax2, xc[Integer(step/2):step:end], yc[Integer(step/2):step:end], ucₙ, vcₙ, 
-    lengthscale = 1,
+    lengthscale = 2,
     normalize = true,
 )
 
