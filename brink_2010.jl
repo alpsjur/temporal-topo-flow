@@ -220,7 +220,7 @@ u∂v∂x = u*∂v∂x
 
 
 simulation.output_writers[:fields] = JLD2OutputWriter(model, (; u, v, η, ω, ∂η∂y, ∂v∂x, u∂v∂x),
-                                                    schedule = AveragedTimeInterval(1hours),
+                                                    schedule = AveragedTimeInterval(12hours),
                                                     filename = "output/brink/" * name * ".jld2",
                                                     overwrite_existing = true)
 nothing
