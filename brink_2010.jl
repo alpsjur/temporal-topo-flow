@@ -5,6 +5,8 @@ Validating Shallow Water by recreating Brink (2010)
 using Oceananigans
 using Oceananigans.Units
 using Oceananigans.Models.ShallowWaterModels
+#using Oceananigans.TurbulenceClosures
+#using Oceananigans.TurbulenceClosures: HorizontalFormulation, VerticalFormulation
 using Statistics
 using Printf                   # formatting text
 using CUDA                     # for running on GPU
@@ -24,13 +26,14 @@ name = "brink_2010-300"
 
 # Grid parameters
 dx =   1kilometer 
-dy =   1kilometers 
+dy =   1kilometer 
 Lx = 120kilometers
 Ly =  90kilometers
 
 # Simulation parameters           
-Δt   =    2seconds     
-tmax =  200days      
+Δt         =    2seconds     
+tmax       =  200days      
+outputtime =    3hours
 
 # Forcing parameters
 ρ   = 1e3
@@ -38,6 +41,9 @@ d   = 0.1
 T   = 4days
 R   = 5e-4  
 switch = nothing
+
+# Closure parameter
+ν = 0
    
 # Bathymetry parameters
 hA = 0
@@ -67,6 +73,7 @@ A  = (h1-h0)/x1
 B  = (h2-h1)/(x2-x1)
 Nx = Int(Lx/dx)
 Ny = Int(Ly/dy)
+
 
 # create grid
 grid = RectilinearGrid(architecture,
@@ -104,7 +111,7 @@ b(x, y) = -hᵢ(x, y)
 
 # Model parameters
 gravitational_acceleration = 9.81
-coriolis = FPlane(f=10e-4)
+coriolis = FPlane(f=1e-4)
 
 # Define speed of gravity wave
 c = sqrt(gravitational_acceleration*(hA + h2))
@@ -142,6 +149,10 @@ h_bcs = FieldBoundaryConditions(FluxBoundaryCondition(nothing), east=flux_bc)
 free_slip_bc = FluxBoundaryCondition(nothing)
 free_slip_field_bcs = FieldBoundaryConditions(free_slip_bc)
 
+# turbulence closure
+#closure = ScalarBiharmonicDiffusivity(ν = ν)   
+closure = ShallowWaterScalarDiffusivity(ν = ν)
+
 # Create model
 model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration,
                           momentum_advection = VectorInvariant(
@@ -152,8 +163,7 @@ model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration,
                         #                          v = free_slip_field_bcs, 
                         #                          h = h_bcs
                         #                          ),
-                          #closure = ShallowWaterScalarDiffusivity(ν=1e-4, ξ=1e-4),
-                          #closure = AnisotropicMinimumDissipation(),
+                          closure = closure,
                           formulation = VectorInvariantFormulation(),                  
                           forcing = (u=u_forcing,v=v_forcing),
                           )
@@ -220,7 +230,7 @@ u∂v∂x = u*∂v∂x
 
 
 simulation.output_writers[:fields] = JLD2OutputWriter(model, (; u, v, η, ω, ∂η∂y, ∂v∂x, u∂v∂x),
-                                                    schedule = AveragedTimeInterval(12hours),
+                                                    schedule = AveragedTimeInterval(outputtime),
                                                     filename = "output/brink/" * name * ".jld2",
                                                     overwrite_existing = true)
 nothing
