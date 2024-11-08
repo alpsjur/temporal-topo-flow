@@ -9,7 +9,7 @@ using Statistics
 filepath = "output/brink/"
 figurepath = "figures/brink/"
 
-filename = "brink_2010-300-period_32"
+filename = "brink_2010-300-period_128"
 
 R = 5e-4
 ρ = 1e3
@@ -37,7 +37,7 @@ xc = xc/1e3
 yc = yc/1e3
 
 
-T = 64*24
+T = 128*2*8
 Tend = length(times)
 
 

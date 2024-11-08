@@ -18,12 +18,12 @@ cmap = ColorSchemes.batlow
 
 basefilename = "brink_2010-300-period_" 
 periods = ("000.5", "001", "002", "004", "008", "016", "032", "064", "128", "256")
-Ts = [64*2, 64*2, 64*2, 64*2, 64*2, 64*2, 64*2, 64*2, 128*2, 258*2]
+Ts = [64*8, 64*8, 64*8, 64*8, 64*8, 64*8, 64*8, 64*8, 128*8, 258*8]
 n = length(periods)
 colors = [ColorSchemes.get(cmap, 1-i / (n - 1)) for i in 0:n-1]
 
 # Shuffle the list of colors
-colors = shuffle(colors)
+#colors = shuffle(colors)
 
 for i in eachindex(periods)
     T = Ts[i]
@@ -79,4 +79,4 @@ end
 
 axislegend(position = :rb)
 
-save(figurepath*"brink_periods_velprofiles_v2.png", fig)
+save(figurepath*"brink_periods_velprofiles.png", fig)

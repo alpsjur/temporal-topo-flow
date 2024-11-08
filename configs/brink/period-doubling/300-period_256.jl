@@ -4,3 +4,4 @@ name = "brink_2010-300-period_256"
 
 T = 256days
 tmax = 256*3days
+outputtime = 3hours

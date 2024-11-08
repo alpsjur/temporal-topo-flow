@@ -9,10 +9,10 @@ using Statistics
 filepath = "output/brink/"
 figurepath = "figures/brink/"
 
-filename = "brink_2010-300-period_04"
+filename = "brink_2010-300-period_128"
 
 # Visualization step interval for vector fields
-step = 4
+step = 3
 stepstart = 1
 
 
@@ -51,7 +51,7 @@ for i in 1:length(times)
 end
 
 
-T = 64*24
+T = 128*2*8
 Tend = length(times)
 
 U = collect(mean(uc_timeseries.data[:,:,1,Tend-T:Tend], dims=3)[:,:,1])
@@ -72,7 +72,7 @@ contour!(ax, xc, yc, Η; color=:black, linewidth = 5)
 
 # Overlay arrows representing velocity vectors on the speed plot
 ar = arrows!(ax, xc[stepstart:step:end], yc[stepstart:step:end], U[stepstart:step:end,stepstart:step:end], V[stepstart:step:end,1:step:end], 
-    lengthscale = 5e2,
+    lengthscale = 8e1,
     #normalize = true,
 )
 
