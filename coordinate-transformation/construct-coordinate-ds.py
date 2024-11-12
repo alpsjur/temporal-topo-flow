@@ -2,6 +2,7 @@ import xarray as xr
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
+import pandas as pd
 
 # Grid parameters
 dx =   1e3
@@ -62,16 +63,6 @@ xs = np.arange(0,60,1)*1e3
 Hs = H(xs, l/4, x1, x2, hA, h0, h1, h2, A, B, g, k, G)
 #levels = np.append(np.linspace(hA+h0, hA+h1-0.1, 10), np.linspace(hA+h1, hA+h2, 10))
 
-#Hs = np.mean(bath, axis=0)[:60]
-
-
-fig, ax = plt.subplots()
-ax.pcolormesh(X, Y, bath, cmap="Blues")
-
-ax.contour(X, Y, bath, levels = Hs, colors="gray")
-ax.axhline(l/4, color="gray")
-
-
 
 ### Find x and y as function of new coordinates
 def xt_from_y(y, H, x1, x2, h0, h1, h2, g, k):
@@ -128,10 +119,9 @@ def dl_fromxt_yt(x, y, Ny, Nl, upstream=False):
         
     return dl
 
-
+## Create contour folowing grid
 Yt = Y.copy()
 Xt = X.copy()
-
 
 dXt = np.zeros_like(Xt)
 dYt = np.ones_like(Yt)
@@ -149,22 +139,7 @@ for i, Ht in enumerate(Hs):
     dLt[:,i] = dlt
     #ax.plot(xt, y, color="red")
 
-pstep = 1
-
-U = dXt[::pstep,::pstep]*dLt[::pstep,::pstep]
-V = dYt[::pstep,::pstep]*dLt[::pstep,::pstep]
-ax.quiver(Xt[::pstep,::pstep], Yt[::pstep,::pstep], U, V, 
-          zorder=10,
-          #scale = 50,
-          angles='xy', scale_units='xy', scale=1,
-          )
-
-
-ax.set_xlim(0, 65e3)
-ax.set_aspect("equal")
-
-
-new_grid = xr.Dataset(
+contour_grid = xr.Dataset(
     data_vars=dict(
         dtdx=(["j", "i"], dXt),
         dtdy=(["j", "i"], dYt),
@@ -178,40 +153,153 @@ new_grid = xr.Dataset(
     )
 )
 
+fig, ax = plt.subplots()
+ax.pcolormesh(X, Y, bath, cmap="Blues")
 
+ax.contour(X, Y, bath, levels = Hs, colors="gray")
+ax.axhline(l/4, color="gray")
+
+pstep = 1
+U = dXt[::pstep,::pstep]*dLt[::pstep,::pstep]
+V = dYt[::pstep,::pstep]*dLt[::pstep,::pstep]
+ax.quiver(Xt[::pstep,::pstep], Yt[::pstep,::pstep], U, V, 
+          zorder=10,
+          #scale = 50,
+          angles='xy', scale_units='xy', scale=1,
+          )
+
+
+ax.set_xlim(0, 65e3)
+ax.set_aspect("equal")
+
+
+### Create rotated grid
+dXr = np.zeros_like(X)
+dYr = np.ones_like(Y)
+
+for i, xi in enumerate(xs):
+    for j, yi in enumerate(y):
+        Hi = bath[j,i]
+        dxr, dyr = dt(yi, Hi, x1, x2, h0, h1, h2, g, k)
+        dXr[j,i] = dxr
+        dYr[j,i] = dyr
+    #ax.plot(xt, y, color="red")
+
+rotate_grid = xr.Dataset(
+    data_vars=dict(
+        dtdx=(["j", "i"], dXr),
+        dtdy=(["j", "i"], dYr),
+    ),
+    coords=dict(
+        x=(["j", "i"], Xt),
+        y=(["j", "i"], Yt),
+        i = np.arange(Nx+1, dtype=np.int32),
+        j = np.arange(Ny+1, dtype=np.int32)
+    )
+)
+
+
+### 
+
+fig, ax = plt.subplots()
+ax.pcolormesh(X, Y, bath, cmap="Blues")
+
+ax.contour(X, Y, bath, levels = Hs, colors="gray")
+ax.axhline(l/4, color="gray")
+
+pstep = 1
+U = dXr[::pstep,::pstep]*1e3
+V = dYr[::pstep,::pstep]*1e3
+ax.quiver(X[::pstep,::pstep], Y[::pstep,::pstep], U, V, 
+          zorder=10,
+          #scale = 50,
+          angles='xy', scale_units='xy', scale=1,
+          )
+
+
+ax.set_xlim(0, 65e3)
+ax.set_aspect("equal")
+
+### Open dataset
 
 ds = xr.open_dataset("output/brink/brink_2010-300-period_004.nc", decode_times=True)
 
-dss = ds.isel(time=-1)
+time_units = "s"  # Adjust if the units are different (e.g., 'D' for days, 'm' for minutes)
+time_origin = "2024-01-01"
 
-fig, [ax1, ax2] = plt.subplots(ncols=2, sharex=True, sharey=True)
+# Convert the time variable to datetime objects
+ds['time'] = pd.to_datetime(ds['time'].values, unit=time_units, origin=pd.Timestamp(time_origin))
+
+
+# Get the last timestamp in the dataset
+end_time = ds.time.max().values
+start_time = pd.to_datetime(end_time) - pd.Timedelta(days=64)
+
+dss = ds.sel(time=slice(start_time, end_time)).mean(dim="time")
+
+#fig, axes = plt.subplots(ncols=2, nrows=2, sharex=True)
+#ax11, ax12, ax21, ax22 = axes.flatten()
+
+
+fig = plt.figure(layout="constrained")
+axd = fig.subplot_mosaic(
+    """
+    ABC
+    ABC
+    abc
+    """,
+    sharex = True
+)
+
 pstep = 3 
 
+# original grid
 X, Y = np.meshgrid(x, y)
 Uc = dss.u.interp(xu=x, yu=y)
 Vc = dss.v.interp(xv=x, yv=y)
 
-ax1.contour(X, Y, bath, levels = Hs, colors="gray")
-ax1.quiver(X[::pstep,::pstep], Y[::pstep,::pstep], Uc[::pstep,::pstep], Vc[::pstep,::pstep])
+axd["A"].contour(X*1e-3, Y*1e-3, bath, levels = Hs, colors="gray")
+axd["A"].quiver(X[::pstep,::pstep]*1e-3, Y[::pstep,::pstep]*1e-3, Uc[::pstep,::pstep], Vc[::pstep,::pstep], zorder=20)
 
-ax1.set_xlim(0, 65e3)
-ax1.set_aspect("equal")
+axd["A"].set_xlim(0, 65)
+axd["A"].set_ylim(0, 90)
+axd["A"].set_aspect("equal")
+
+axd["a"].plot(x*1e-3, Vc.mean(dim="yv"))
 
 
+### rotatet velocities
+uc = dss.u.interp(xu=rotate_grid.x, yu=rotate_grid.y)
+vc = dss.v.interp(xv=rotate_grid.x, yv=rotate_grid.y)
+
+Ur = uc*rotate_grid.dtdy - vc*rotate_grid.dtdx
+Vr = uc*rotate_grid.dtdx + vc*rotate_grid.dtdy
+
+axd["B"].quiver(X[::pstep,::pstep]*1e-3, Y[::pstep,::pstep]*1e-3, Ur[::pstep,::pstep], Vr[::pstep,::pstep], zorder=20)
+
+axd["B"].set_xlim(0, 65)
+axd["B"].set_ylim(0, 90)
+axd["B"].set_aspect("equal")
+
+axd["b"].plot(x*1e-3, Vr.mean(dim="j"))
 
 
+### contour folowing velocities
+ut = dss.u.interp(xu=contour_grid.x, yu=contour_grid.y)
+vt = dss.v.interp(xv=contour_grid.x, yv=contour_grid.y)
 
-ut = dss.u.interp(xu=new_grid.x, yu=new_grid.y)
-vt = dss.v.interp(xv=new_grid.x, yv=new_grid.y)
+I, J = np.meshgrid(contour_grid.i, contour_grid.j)
 
-I, J = np.meshgrid(new_grid.i, new_grid.j)
+Ut = ut*contour_grid.dtdy - vt*contour_grid.dtdx
+Vt = ut*contour_grid.dtdx + vt*contour_grid.dtdy
+axd["C"].quiver(I[::pstep,::pstep], J[::pstep,::pstep], Ut[::pstep,::pstep], Vt[::pstep,::pstep], zorder=20)
 
-Ut = ut*new_grid.dtdy - vt*new_grid.dtdx
-Vt = ut*new_grid.dtdx + vt*new_grid.dtdy
-ax2.quiver(I[::pstep,::pstep]*1e3, J[::pstep,::pstep]*1e3, Ut[::pstep,::pstep], Vt[::pstep,::pstep])
+axd["C"].set_xlim(0, 65)
+axd["C"].set_ylim(0, 90)
+axd["C"].set_aspect("equal")
 
-ax2.set_xlim(0, 65e3)
-ax2.set_aspect("equal")
+Vmean = (Vt*contour_grid.dl).sum(dim="j")/contour_grid.dl.sum(dim="j")
+axd["c"].plot(contour_grid.i, Vmean)
 
 fig.tight_layout()
 
