@@ -32,7 +32,6 @@ Nl = Ly//l
 def G(y, g, k):
     return g*np.sin(k*y)
 
-
 # Define the vectorized H function
 def H(x, y, x1, x2, hA, h0, h1, h2, A, B, g, k, G):
     # Calculate the three possible cases
