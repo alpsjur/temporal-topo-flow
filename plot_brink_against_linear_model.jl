@@ -9,11 +9,11 @@ using ColorSchemes
 using Random 
 using RollingFunctions  
 
-name = "300-period_004.jl"
+name = "329.jl"
 xvals = (30, 35, 40, 45, 50)
 #xvals = (45)
 
-Tinc = 16*8
+Tinc = 12*8
 
 filepath = "output/brink/"
 figurepath = "figures/brink/"
@@ -27,12 +27,14 @@ R   = 5e-4
 L   = 90kilometers
 
 outputtime = 3hours
+Δt = 2seconds
 
-config = "period-doubling/"*name
+#config = "period-doubling/"*name
+config = name
 include("configs/brink/"*config)
 
 ω   = 2π/T
-window = Integer(outputtime/2seconds)
+window = Integer(outputtime/Δt)
 
 # Load time series data from the saved JLD2 file
 full_output = FieldDataset(filepath *  name * ".jld2")
@@ -73,14 +75,14 @@ for i in eachindex(xvals)
 
     numerical = -mean(v[xval,:,1,:], dims=(1))[1,1:end-1]*1e2
 
-    # lines!(axts, t, numerical,  color=color, label = string(xval))
-    # lines!(axts, t, analytical,  color=color, linestyle=:dash)
+    lines!(axts, t, numerical,  color=color, label = string(xval))
+    lines!(axts, t, analytical,  color=color, linestyle=:dash)
 
     # lines!(axts, t[1: Tinc], numerical[1: Tinc], color=color, label = string(xval))
     # lines!(axts, t[1: Tinc], analytical[1: Tinc],  color=color, linestyle=:dash)
 
-    lines!(axts, t[end-Tinc: end], numerical[end-Tinc: end], color=color, label = string(xval))
-    lines!(axts, t[end-Tinc: end], analytical[end-Tinc: end],  color=color, linestyle=:dash)
+    # lines!(axts, t[end-Tinc: end], numerical[end-Tinc: end], color=color, label = string(xval))
+    # lines!(axts, t[end-Tinc: end], analytical[end-Tinc: end],  color=color, linestyle=:dash)
     
 
     scatter!(axscatter, analytical, numerical, 
