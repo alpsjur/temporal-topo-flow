@@ -10,7 +10,8 @@ using RollingFunctions  # For applying rolling window functions
 filepath = "output/brink/"
 #fullfilename = ARGS[1]
 #filename = split(fullfilename, "/")[end][1:end-3]
-filename = "brink_2010-300-period_004"
+filename = "brink_2010-300-period_128"
+#filename = "brink_2010-375"
 
 # Visualization step interval for vector fields
 step = 4
@@ -19,6 +20,7 @@ step = 4
 u_timeseries = FieldTimeSeries(filepath * filename * ".jld2", "u")  # u-component of velocity field
 v_timeseries = FieldTimeSeries(filepath * filename * ".jld2", "v")  # v-component of velocity field
 η_timeseries = FieldTimeSeries(filepath * filename * ".jld2", "η")  # height (or depth) field
+ω_timeseries = FieldTimeSeries(filepath * filename * ".jld2", "ω")  
 
 # Extract time points from the simulation data
 times = u_timeseries.times
@@ -33,7 +35,7 @@ yc = yc/1e3
 dx = xc[2]-xc[1]
 
 # Compute the mean along-slope velocity with rolling mean smoothing
-T = parse(Int16,split(filename, "_")[end]) * 24  # Rolling window size
+T = parse(Int16,split(filename, "_")[end]) * 8  # Rolling window size
 v_slope = v_timeseries.data[1:Int(dx*60),:,1,:]
 V = mean(v_slope, dims=(1,2))[1,1,:]  # Mean v-velocity across spatial dimensions
 Vres = rollmean(collect(V), T)  # Smoothed velocity using rolling mean
@@ -45,16 +47,19 @@ Vres = vcat(fill_start, Vres)   # Concatenate the placeholder values with the ro
 uc_timeseries = deepcopy(η_timeseries)  # u-component interpolated on the h grid
 vc_timeseries = deepcopy(η_timeseries)  # v-component interpolated on the h grid
 s_timeseries = deepcopy(η_timeseries)   # Speed interpolated on the h grid
+ωc_timeseries = deepcopy(η_timeseries)
 
 # Loop over all time steps to interpolate `u` and `v` and calculate derived fields
 for i in 1:length(times)
     uᵢ = u_timeseries[i]  # u-component at time `i`
     vᵢ = v_timeseries[i]  # v-component at time `i`
+    ωᵢ = ω_timeseries[i]
 
     # Interpolate `u` and `v` to grid centers and calculate speed and vorticity
     uc_timeseries[i] .= @at (Center, Center, Center) uᵢ
     vc_timeseries[i] .= @at (Center, Center, Center) vᵢ
     s_timeseries[i] .= @at (Center, Center, Center) sqrt(uᵢ^2 + vᵢ^2)
+    ωc_timeseries[i] .= @at (Center, Center, Center) ωᵢ
 end
 
 # Initialize logging for the animation creation process
@@ -74,12 +79,16 @@ title = @lift @sprintf("%15i days", times[$n] / (3600 * 24))
 sₙ = @lift interior(s_timeseries[$n], :, :)  # Speed field
 ucₙ = @lift interior(uc_timeseries[$n], Integer(step/2):step:length(xc), Integer(step/2):step:length(yc))  # u-component of velocity
 vcₙ = @lift interior(vc_timeseries[$n], Integer(step/2):step:length(xc), Integer(step/2):step:length(yc))  # v-component of velocity
+ωₙ = @lift interior(ωc_timeseries[$n], :, :)  # Vorticity field
+
 
 # Set limits for the color scales used in the plots
 ηmax = maximum(interior(η_timeseries))           # Maximum depth for color scaling
 ηmin = minimum(interior(η_timeseries))
 slim = maximum(interior(s_timeseries))           # Maximum speed for color scaling
 Vlim = maximum(abs, V) * 1.01  # Max along-slope velocity for scaling
+ωlim = maximum(abs, ωc_timeseries)           # Maximum speed for color scaling
+
 
 # Create a figure object to hold the plots for the animation
 fig = Figure(size = (1200, 800))
@@ -87,7 +96,13 @@ fig = Figure(size = (1200, 800))
 # Create axes for each subplot with appropriate titles
 ax2 = Axis(fig[2:4, 1]; title = "velocity [m s-1]", xlabel="x [km]", ylabel="y [km]", aspect=DataAspect())     # Axis for velocity plot
 ax3 = Axis(fig[2:4, 2]; title = "sea surface height [m]", xlabel="x [km]", ylabel="y [km]", aspect=DataAspect())      # Axis for vorticity plot
-ax4 = Axis(fig[6, 1:2]; title = "area mean v", xlabel="time [days]", ylabel="[m s-1]")  # Axis for mean u-velocity plot
+ax4 = Axis(fig[2:4, 3]; title = "vorticity [s-1]", xlabel="x [km]", ylabel="y [km]", aspect=DataAspect())      # Axis for vorticity plot
+limits!(ax2, 0, 90, 0, yc[end])
+limits!(ax3, 0, 90, 0, yc[end])
+limits!(ax4, 0, 90, 0, yc[end])
+
+
+axV = Axis(fig[6, 1:3]; title = "area mean v", xlabel="time [days]", ylabel="[m s-1]")  # Axis for mean u-velocity plot
 
 # Add a label for the figure title that will dynamically update with the time variable
 fig[1, :] = Label(fig, title, fontsize=24, tellwidth=false)
@@ -104,16 +119,19 @@ ar = arrows!(ax2, xc[Integer(step/2):step:end], yc[Integer(step/2):step:end], uc
 hm_η = heatmap!(ax3, xc, yc, ηₙ; colorrange = (ηmin, ηmax), colormap = :thermal)
 Colorbar(fig[5, 2], hm_η, vertical=false)
 
+hm_ω = heatmap!(ax4, xc, yc, ωₙ; colorrange = (-ωlim, ωlim), colormap = :curl)
+Colorbar(fig[5, 3], hm_ω, vertical=false)
+
 # Scatter plots for raw and smoothed velocity data
-scatter!(ax4, pointsV)
-scatter!(ax4, pointsVres)
-limits!(ax4, 0, days[end], -Vlim, Vlim)  # Set axis limits based on time and velocity ranges
+scatter!(axV, pointsV)
+scatter!(axV, pointsVres)
+limits!(axV, 0, days[end], -Vlim, Vlim)  # Set axis limits based on time and velocity ranges
 
 # Define the frame range for the animation
 frames = 1:length(times)
 
 # Record the animation, updating the figure for each time step
-CairoMakie.record(fig, "animations/brink/" * filename * ".mp4", frames, framerate = 24) do i
+CairoMakie.record(fig, "animations/brink/" * filename * ".mp4", frames, framerate = 8) do i
     #msg = string("Plotting frame ", i, " of ", frames[end])
     #print(msg * " \r")  # Log progress without creating a new line for each frame
     n[] = i             # Update the observable `n` to the current frame index

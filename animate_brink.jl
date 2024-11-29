@@ -10,7 +10,7 @@ using RollingFunctions  # For applying rolling window functions
 filepath = "output/brink/"
 #fullfilename = ARGS[1]
 #filename = split(fullfilename, "/")[end][1:end-3]
-filename = "brink_2010-retrograde-switch_off"
+filename = "brink_2010-361"
 
 # Visualization step interval for vector fields
 step = 4
@@ -19,7 +19,7 @@ step = 4
 u_timeseries = FieldTimeSeries(filepath * filename * ".jld2", "u")  # u-component of velocity field
 v_timeseries = FieldTimeSeries(filepath * filename * ".jld2", "v")  # v-component of velocity field
 η_timeseries = FieldTimeSeries(filepath * filename * ".jld2", "η")  # height (or depth) field
-ω_timeseries = FieldTimeSeries(filepath * filename * ".jld2", "ω")  # height (or depth) field
+ω_timeseries = FieldTimeSeries(filepath * filename * ".jld2", "ω")  
 
 # Extract time points from the simulation data
 times = u_timeseries.times
@@ -108,9 +108,9 @@ Colorbar(fig[5, 3], hm_ω, vertical=false)
 frames = 1:length(times)
 
 # Record the animation, updating the figure for each time step
-CairoMakie.record(fig, "animations/brink/" * filename * ".mp4", frames, framerate = 24) do i
-    msg = string("Plotting frame ", i, " of ", frames[end])
-    print(msg * " \r")  # Log progress without creating a new line for each frame
+CairoMakie.record(fig, "animations/brink/" * filename * ".mp4", frames, framerate = 8) do i
+    #msg = string("Plotting frame ", i, " of ", frames[end])
+    #print(msg * " \r")  # Log progress without creating a new line for each frame
     n[] = i             # Update the observable `n` to the current frame index
 
 end

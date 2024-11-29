@@ -9,7 +9,7 @@ using Statistics
 filepath = "output/brink/"
 figurepath = "figures/brink/"
 
-filename = "brink_2010-300-period_128"
+filename = "brink_2010-329"
 
 # Visualization step interval for vector fields
 step = 3
@@ -51,7 +51,7 @@ for i in 1:length(times)
 end
 
 
-T = 128*2*8
+T = 64*8
 Tend = length(times)
 
 U = collect(mean(uc_timeseries.data[:,:,1,Tend-T:Tend], dims=3)[:,:,1])

@@ -18,7 +18,7 @@ cmap = ColorSchemes.batlow
 
 basefilename = "brink_2010-300-period_" 
 periods = ("000.5", "001", "002", "004", "008", "016", "032", "064", "128", "256")
-Ts = [64*8, 64*8, 64*8, 64*8, 64*8, 64*8, 64*8, 64*8, 128*8, 258*8]
+Ts = [64*8, 64*8, 64*8, 64*8, 64*8, 64*8, 64*8, 64*8, 128*8, 256*8]
 n = length(periods)
 colors = [ColorSchemes.get(cmap, 1-i / (n - 1)) for i in 0:n-1]
 

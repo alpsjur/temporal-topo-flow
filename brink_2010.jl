@@ -42,6 +42,9 @@ T   = 4days
 R   = 5e-4  
 switch = nothing
 
+# Coriolis parameter
+f = 1e-4
+
 # Closure parameter
 ν = 0
    
@@ -111,7 +114,7 @@ b(x, y) = -hᵢ(x, y)
 
 # Model parameters
 gravitational_acceleration = 9.81
-coriolis = FPlane(f=1e-4)
+coriolis = FPlane(f=f)
 
 # Define speed of gravity wave
 c = sqrt(gravitational_acceleration*(hA + h2))

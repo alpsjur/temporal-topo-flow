@@ -9,7 +9,7 @@ using Statistics
 filepath = "output/brink/"
 figurepath = "figures/brink/"
 
-filename = "brink_2010-300-period_128"
+filename = "brink_2010-329"
 
 R = 5e-4
 ρ = 1e3
@@ -37,7 +37,7 @@ xc = xc/1e3
 yc = yc/1e3
 
 
-T = 128*2*8
+T = 64*8
 Tend = length(times)
 
 
@@ -102,6 +102,7 @@ ax = Axis(fig[1, 1], xlabel="x [km]", ylabel="Terms [m2 s-2]")
 lines!(ax, xc, TFS, label="Form stress")
 lines!(ax, xc, MT, label="Momentum transport")
 lines!(ax, xc, BS, label="Bottom stress")
+lines!(ax, xc, TFS+MT+BS, label="Sum", color=:gray, linestyle=:dash)
 limits!(ax, 0, 90, nothing, nothing)
 
 axislegend(position = :rb)
