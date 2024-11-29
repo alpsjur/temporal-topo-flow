@@ -1,6 +1,40 @@
 import xarray as xr
 import numpy as np
 
+params = {
+    # Grid parameters
+    "grid": {
+        "dx": 1e3,
+        "dy": 1e3,
+        "Lx": 120e3,
+        "Ly": 90e3,
+    },
+
+    # Bathymetry parameters
+    "bathymetry": {
+        "hA": 0,
+        "h0": 25,
+        "h1": 100,
+        "h2": 1000,
+        "x1": 40e3,
+        "x2": 60e3,
+        "l": 45e3,
+        "hc": 59,
+    },
+}
+
+# Add derived parameters
+params["derived"] = {
+    "g": params["bathymetry"]["hc"] / params["bathymetry"]["h1"],
+    "k": 2 * np.pi / params["bathymetry"]["l"],
+    "A": (params["bathymetry"]["h1"] - params["bathymetry"]["h0"]) / params["bathymetry"]["x1"],
+    "B": (params["bathymetry"]["h2"] - params["bathymetry"]["h1"]) / 
+         (params["bathymetry"]["x2"] - params["bathymetry"]["x1"]),
+    "Nx": params["grid"]["Lx"] // params["grid"]["dx"],
+    "Ny": params["grid"]["Ly"] // params["grid"]["dy"],
+    "Nl": params["grid"]["Ly"] // params["bathymetry"]["l"],
+}
+
 def G(y, g, k):
     return g*np.sin(k*y)
 

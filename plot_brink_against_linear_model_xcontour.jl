@@ -9,7 +9,7 @@ using ColorSchemes
 using Random 
 using RollingFunctions  
 
-name = "329.jl"
+name = "300-period_004.jl"
 xvals = (30, 35, 40, 45, 50)
 #xvals = (45)
 
@@ -31,7 +31,7 @@ outputtime = 3hours
 
 #config = "period-doubling/"*name
 config = name
-include("configs/brink/"*config)
+include("configs/brink/period-doubling/"*config)
 
 ω   = 2π/T
 window = Integer(outputtime/Δt)
@@ -75,14 +75,14 @@ for i in eachindex(xvals)
 
     numerical = -mean(v[xval,:,1,:], dims=(1))[1,1:end-1]*1e2
 
-    lines!(axts, t, numerical,  color=color, label = string(xval))
-    lines!(axts, t, analytical,  color=color, linestyle=:dash)
+    # lines!(axts, t, numerical,  color=color, label = string(xval))
+    # lines!(axts, t, analytical,  color=color, linestyle=:dash)
 
     # lines!(axts, t[1: Tinc], numerical[1: Tinc], color=color, label = string(xval))
     # lines!(axts, t[1: Tinc], analytical[1: Tinc],  color=color, linestyle=:dash)
 
-    # lines!(axts, t[end-Tinc: end], numerical[end-Tinc: end], color=color, label = string(xval))
-    # lines!(axts, t[end-Tinc: end], analytical[end-Tinc: end],  color=color, linestyle=:dash)
+    lines!(axts, t[end-Tinc: end], numerical[end-Tinc: end], color=color, label = string(xval))
+    lines!(axts, t[end-Tinc: end], analytical[end-Tinc: end],  color=color, linestyle=:dash)
     
 
     scatter!(axscatter, analytical, numerical, 
@@ -97,5 +97,5 @@ end
 axislegend(axscatter, position = :rb)
 axislegend(axts, position = :rb)
 
-save(figurepath*name*"_scatter.png", figscatter)
-save(figurepath*name*"_analytical_ts.png", figts)
+save(figurepath*name*"_scatter_xcontour.png", figscatter)
+save(figurepath*name*"_analytical_ts_xcontour.png", figts)

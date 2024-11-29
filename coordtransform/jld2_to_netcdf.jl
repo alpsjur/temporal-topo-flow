@@ -4,7 +4,7 @@ using Oceananigans
 
 # Define file path and name of the saved simulation output
 filepath = "output/brink/"
-filename = "brink_2010-329"
+filename = "brink_2010-300-period_016"
 
 # Open the JLD2 file and load data
 jld2_file = filepath * filename * ".jld2"
