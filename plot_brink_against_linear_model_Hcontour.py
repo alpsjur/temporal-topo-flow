@@ -68,7 +68,6 @@ Nl = params["derived"]["Nl"]
 
 hA = 500    # TODO implement this parameter in utils
 
-
 x = np.arange(0, Lx, dx)
 y = np.arange(0, Ly, dy)
 
@@ -83,16 +82,15 @@ dYt = np.ones_like(Yt)
 dLt = np.ones_like(Xt)*dy
 
 for i, Ht in enumerate(depths):
-    xt = xt_from_y(y, Ht, x1, x2, h0, h1, h2, g, k)
+    xt = xt_from_y(y, Ht, x1, x2, hA, h0, h1, h2, g, k)
     Xt[:,i] = xt
     
-    dxt, dyt = dt(y, Ht, x1, x2, h0, h1, h2, g, k)
+    dxt, dyt = dt(y, Ht, x1, x2, hA,  h0, h1, h2, g, k)
     dXt[:,i] = dxt
     dYt[:,i] = dyt
     
     dlt = dl_fromxt_yt(xt, y, Ny, Nl, upstream=True)
     dLt[:,i] = dlt
-    #ax.plot(xt, y, color="red")
 
 contour_grid = xr.Dataset(
     data_vars=dict(
@@ -170,6 +168,7 @@ figts.savefig(figurepath + "timeseries/" + name + "_analytical_ts_Hcontour.png")
 fig, ax = plt.subplots(figsize=(6,6))
 ax.pcolormesh(h.sel(xv=slice(None,90e3)), cmap="Grays", alpha=0.7)
 ax.contour(h.sel(xv=slice(None,90e3)), levels=Hs, colors=colors)
+fig.savefig(figurepath + "timeseries/" + "Hcontours.png")
 
 
 # Show plots (optional, for interactive environments)

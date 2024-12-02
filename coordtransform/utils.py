@@ -58,7 +58,9 @@ def H(x, y, x1, x2, hA, h0, h1, h2, A, B, g, k, G):
     return h
 
 ### Find x and y as function of new coordinates
-def xt_from_y(y, H, x1, x2, h0, h1, h2, g, k):
+def xt_from_y(y, H, x1, x2, hA, h0, h1, h2, g, k):
+    H = H - hA
+    
     # First, calculate xt using the initial formula everywhere
     xt = x1*(h0 - H) / (h0 - h1 - h1*g*np.sin(k * y))
     
@@ -70,7 +72,9 @@ def xt_from_y(y, H, x1, x2, h0, h1, h2, g, k):
     
     return xt
 
-def dt(y, H, x1, x2, h0, h1, h2, g, k):
+def dt(y, H, x1, x2, hA, h0, h1, h2, g, k):
+    H = H - hA
+    
     # First, calculate xt and dxt using the initial formula everywhere
     xt = x1*(h0 - H) / (h0 - h1 - h1*g*np.sin(k * y))
     dxt = h1*k*g*x1*(h0-H)*np.cos(k*y)/((h0-h1*g*np.sin(k*y)-h1)**2)
