@@ -26,12 +26,16 @@ docs/site/
 Manifest.toml
 
 ### Other ###
+configs/run*
+
+.vscode
 
 # Figures
 figures/
 *.pdf
 *.png
+animations/
 
 # data
-data/
-*data/
+output/
+
