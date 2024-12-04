@@ -34,8 +34,8 @@ Ly = 90kilometers                     # Domain size in y-direction
 
 # Simulation parameters
 Δt = 2seconds                         # Timestep size
-tmax = 64days                         # Simulation duration
-outputtime = 24hours                  # Interval for output writing
+tmax = 32days                         # Simulation duration
+outputtime = 1day                     # Interval for output writing
 
 # Forcing parameters
 ρ = 1e3                               # Density (kg/m³)
@@ -157,7 +157,12 @@ u, v, h = model.solution
 bath = model.bathymetry
 η = h + bath
 
-simulation.output_writers[:fields] = JLD2OutputWriter(model, (; u, v, η),
+# Momentum terms
+∂η∂y = ∂y(η)
+∂v∂x = ∂x(v)
+u∂v∂x = u*∂v∂x
+
+simulation.output_writers[:fields] = JLD2OutputWriter(model, (; u, v, η, ∂η∂y, ∂v∂x, u∂v∂x),
     schedule=AveragedTimeInterval(outputtime),
     filename="reproduce_brink_2010/output/" * name * ".jld2",
     overwrite_existing=true)
