@@ -9,8 +9,8 @@ using JLD2              # For saving and loading simulation data in Julia format
 using Statistics        # For basic statistical operations
 
 # Define file paths and filenames
-filepath = "output/"                # Path to simulation output
-figurepath = "figures/"             # Path for saving figures
+filepath = "reproduce_brink_2010/output/"      # Path to simulation output
+figurepath = "reproduce_brink_2010/figures/"   # Path for saving figures
 filename = "brink_2010-300"         # Base name for simulation files
 
 # Define physical constants
