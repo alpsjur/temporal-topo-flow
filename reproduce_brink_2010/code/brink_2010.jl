@@ -3,7 +3,7 @@ Validating Shallow Water model by recreating Brink (2010).
 The original article can be found here:
 https://www.researchgate.net/publication/50405295_Topographic_rectification_in_a_forced_dissipative_barotropic_ocean
 
-Parameters are for run 300
+Parameters are for run 300. 
 """
 
 using Oceananigans                    # For ocean dynamics simulation
@@ -159,12 +159,12 @@ bath = model.bathymetry
 
 simulation.output_writers[:fields] = JLD2OutputWriter(model, (; u, v, η),
     schedule=AveragedTimeInterval(outputtime),
-    filename="output/" * name * ".jld2",
+    filename="reproduce_brink_2010/output/" * name * ".jld2",
     overwrite_existing=true)
 
 simulation.output_writers[:bathymetry] = JLD2OutputWriter(model, (; bath),
     schedule=TimeInterval(tmax - Δt),
-    filename="output/" * name * "_bathymetry.jld2",
+    filename="reproduce_brink_2010/output/" * name * "_bathymetry.jld2",
     overwrite_existing=true)
 
 @info "Starting configuration " * name

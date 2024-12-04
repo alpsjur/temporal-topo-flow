@@ -1,3 +1,6 @@
+"""
+Recreate Figure 3 from Brink (2010).
+"""
 # Import necessary packages for visualization, ocean simulation, formatted output, and data handling
 using CairoMakie        # For creating visualizations and animations
 using Oceananigans      # For simulating ocean dynamics
@@ -36,7 +39,7 @@ xc /= 1e3  # Convert x-coordinates to kilometers
 yc /= 1e3  # Convert y-coordinates to kilometers
 
 # Define time-averaging parameters
-T = 4 * 8                       # Average over 4 days (8 timesteps per day)
+T = 4                           # Average over 4 days (1 timestep per day)
 Tend = length(times)            # Final timestep index
 
 # Initialize centered fields for interpolation

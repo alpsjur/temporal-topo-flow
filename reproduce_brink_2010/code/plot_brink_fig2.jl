@@ -1,3 +1,6 @@
+"""
+Recreate Figure 2 from Brink (2010).
+"""
 # Import necessary packages for visualization, ocean simulation, formatted output, and data handling
 using CairoMakie        # For creating visualizations and animations
 using Oceananigans      # For simulating ocean dynamics
@@ -6,8 +9,8 @@ using JLD2              # For saving and loading simulation data in Julia format
 using Statistics        # For basic statistical operations
 
 # Define file paths and names for simulation output and figures
-filepath = "output/"          # Path to simulation output
-figurepath = "figures/"       # Path for saving figures
+filepath = "reproduce_brink_2010/output/"          # Path to simulation output
+figurepath = "reproduce_brink_2010/figures/"       # Path for saving figures
 filename = "brink_2010-300"         # Base name for simulation files
 
 # Define visualization parameters
@@ -44,7 +47,7 @@ for i in 1:length(times)
 end
 
 # Define averaging parameters for time-averaged fields
-T = 4 * 8                   # Average over 4 days (8 timesteps per day)
+T = 4                       # Average over 4 days (1 timestep per day)
 Tend = length(times)        # Final timestep index
 
 # Compute time-averaged fields
