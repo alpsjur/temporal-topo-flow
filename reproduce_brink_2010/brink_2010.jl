@@ -1,16 +1,16 @@
 """
-Validating Shallow Water by recreating Brink (2010)
+Validating Shallow Water model by recreating Brink (2010).
+The original article can be found here: 
+https://www.researchgate.net/publication/50405295_Topographic_rectification_in_a_forced_dissipative_barotropic_ocean
 """
 
 using Oceananigans
 using Oceananigans.Units
 using Oceananigans.Models.ShallowWaterModels
-#using Oceananigans.TurbulenceClosures
-#using Oceananigans.TurbulenceClosures: HorizontalFormulation, VerticalFormulation
 using Statistics
-using Printf                   # formatting text
-using CUDA                     # for running on GPU
-using CairoMakie               # plotting
+using Printf                   
+using CUDA                     
+using CairoMakie               
 
 # Run on GPU (wow, fast!) if available. Else run on CPU
 if CUDA.functional()
@@ -115,36 +115,7 @@ b(x, y) = -hᵢ(x, y)
 # Model parameters
 gravitational_acceleration = 9.81
 coriolis = FPlane(f=f)
-
-# Define speed of gravity wave
-c = sqrt(gravitational_acceleration*(hA + h2))
-
-
-# Trying to implement gradient boundary condition
-# auxiliary_u = XFaceField(grid)
-# auxiliary_v = YFaceField(grid)
-# auxiliary_h = CenterField(grid)
-
-# function copy_fields!(sim)
-#     model = sim.model
-#     solution = model.solution
-#     parent(auxiliary_u) .= parent(solution.u)
-#     parent(auxiliary_v) .= parent(solution.v)
-#     parent(auxiliary_h) .= parent(solution.h)
-#     return nothing
-# end
-
-# @inline dhdx(j, k, grid, clock, model_fields, c) = -5e3
-# @inbounds (auxiliary_u[90, j, k]*auxiliary_h[90, j, k]
-#     -auxiliary_u[89, j, k]*auxiliary_h[89, j, k]
-#     +auxiliary_v[90, j, k]*auxiliary_h[90, j, k]
-#     -auxiliary_v[90, j-1, k]*auxiliary_h[90, j-1, k])/(1e3*c)
-
-# radiative_bc = GradientBoundaryCondition(dhdx, discrete_form=true, parameters=c)
-
-
-hflux(y, t, h, p) = (h - p.hA - p.h2)*p.c
-    
+  
 
 flux_bc = FluxBoundaryCondition(hflux, field_dependencies=:h, parameters=(; c, hA, h2))
 h_bcs = FieldBoundaryConditions(FluxBoundaryCondition(nothing), east=flux_bc)
@@ -152,8 +123,7 @@ h_bcs = FieldBoundaryConditions(FluxBoundaryCondition(nothing), east=flux_bc)
 free_slip_bc = FluxBoundaryCondition(nothing)
 free_slip_field_bcs = FieldBoundaryConditions(free_slip_bc)
 
-# turbulence closure
-#closure = ScalarBiharmonicDiffusivity(ν = ν)   
+# turbulence closure, by default set to zero 
 closure = ShallowWaterScalarDiffusivity(ν = ν)
 
 # Create model
@@ -162,10 +132,6 @@ model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration,
                             #vorticity_scheme=WENO()
                             ),
                           bathymetry = b,
-                        #   boundary_conditions = (u = free_slip_field_bcs, 
-                        #                          v = free_slip_field_bcs, 
-                        #                          h = h_bcs
-                        #                          ),
                           closure = closure,
                           formulation = VectorInvariantFormulation(),                  
                           forcing = (u=u_forcing,v=v_forcing),
@@ -185,23 +151,10 @@ axis = Axis(fig[1,1],
         ylabel = "y [m]",
         )
 
-depth = model.solution.h
-
-
-
-hm = heatmap!(axis, depth, colormap=:deep)
-Colorbar(fig[1, 2], hm, label = "Depth [m]")
-#contour!(axis, depth, levels=0:100:1000)
-save(figurepath*name*"_bathymetry.png", fig)
-                         
+depth = model.solution.h                    
 
 # initialize simulations
 simulation = Simulation(model, Δt=Δt, stop_time=tmax)
-
-# Trying to implement gradient boundary condition
-# using Oceananigans: UpdateStateCallsite
-#simulation.callbacks[:copy_fields] = Callback(copy_fields!, callsite=UpdateStateCallsite())
-
 
 # logging simulation progress
 start_time = time_ns()
@@ -221,28 +174,43 @@ u, v, h = model.solution
 bath = model.bathymetry
 η = h + bath
 
+# ∂b∂x = ∂x(bath)
+# ∂b∂y = ∂y(bath)
 
-∂b∂x = ∂x(bath)
-∂b∂y = ∂y(bath)
+# # momentum terms
+# ∂η∂y = ∂y(η)
+# ∂v∂x = ∂x(v)
+
+# u∂v∂x = u*∂v∂x
+# v∂u∂y = v*∂u∂y    # TODO do I need this therm for contour following stuff?
+
 ω = Field(∂x(v) - ∂y(u))
+ωu = ω*u 
+ωv = ω*v
 
-# momentum terms
-∂η∂y = ∂y(η)
-∂v∂x = ∂x(v)
-u∂v∂x = u*∂v∂x
+fields = Dict("u" => u, "v" => v, 
+              "h" => h, "omega" => ω,
+              "omegau" => ωu, "omegav" => ωv
+              )
+
+simulation.output_writers[:field_writer] = NetCDFOutputWriter(model, fields, 
+                        filename = "output/brink/"*name*".nc",
+                        schedule = AveragedTimeInterval(outputtime),
+                        overwrite_existing = true
+                        )
 
 
-simulation.output_writers[:fields] = JLD2OutputWriter(model, (; u, v, η, ω, ∂η∂y, ∂v∂x, u∂v∂x),
-                                                    schedule = AveragedTimeInterval(outputtime),
-                                                    filename = "output/brink/" * name * ".jld2",
-                                                    overwrite_existing = true)
-nothing
+# simulation.output_writers[:fields] = JLD2OutputWriter(model, (; u, v, η, ω, ∂η∂y, ∂v∂x, u∂v∂x),
+#                                                     schedule = AveragedTimeInterval(outputtime),
+#                                                     filename = "output/brink/" * name * ".jld2",
+#                                                     overwrite_existing = true)
+# nothing
 
-simulation.output_writers[:bathymetry] = JLD2OutputWriter(model, (; bath, ∂b∂x, ∂b∂y),
-                                                    schedule = TimeInterval(tmax-Δt),
-                                                    filename = "output/brink/" * name * "_bathymetry.jld2",
-                                                    overwrite_existing = true)
-nothing
+# simulation.output_writers[:bathymetry] = JLD2OutputWriter(model, (; bath, ∂b∂x, ∂b∂y),
+#                                                     schedule = TimeInterval(tmax-Δt),
+#                                                     filename = "output/brink/" * name * "_bathymetry.jld2",
+#                                                     overwrite_existing = true)
+# nothing
 
 @info "Starting configuration " * name
 
