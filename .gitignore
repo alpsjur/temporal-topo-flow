@@ -41,9 +41,9 @@ output/
 
 
 ## Re-include spesific folders
-!reproduce_brink_2010/output/
-!reproduce_brink_2010/output/**
+#!reproduce_brink_2010/output/
+#!reproduce_brink_2010/output/**
 
-!reproduce_brink_2010/figures/
-!reproduce_brink_2010/figures/**
+#!reproduce_brink_2010/figures/
+#!reproduce_brink_2010/figures/**
 
