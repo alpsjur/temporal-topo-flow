@@ -39,7 +39,7 @@ xc /= 1e3  # Convert x-coordinates to kilometers
 yc /= 1e3  # Convert y-coordinates to kilometers
 
 # Define time-averaging parameters
-T = 4                           # Average over 4 days (1 timestep per day)
+T = 2                           # Average over 2 forcing periods (one forcing period per time step) 
 Tend = length(times)            # Final timestep index
 
 # Initialize centered fields for interpolation

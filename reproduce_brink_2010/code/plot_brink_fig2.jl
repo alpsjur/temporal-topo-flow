@@ -47,7 +47,7 @@ for i in 1:length(times)
 end
 
 # Define averaging parameters for time-averaged fields
-T = 4                       # Average over 4 days (1 timestep per day)
+T = 2                       # Average over 2 forcing periods (one forcing period per time step) 
 Tend = length(times)        # Final timestep index
 
 # Compute time-averaged fields

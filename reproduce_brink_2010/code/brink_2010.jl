@@ -34,8 +34,8 @@ Ly = 90kilometers                     # Domain size in y-direction
 
 # Simulation parameters
 Δt = 2seconds                         # Timestep size
-tmax = 32days                         # Simulation duration
-outputtime = 1day                     # Interval for output writing
+tmax = 64days                         # Simulation duration
+outputtime = 4day                     # Interval for output writing
 
 # Forcing parameters
 ρ = 1e3                               # Density (kg/m³)

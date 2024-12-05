@@ -26,7 +26,7 @@ To validate the shallow water model in Oceananigans.jl, this folder reproduces r
 #### **output**
 Example output files corresponding to run 300 (see Table 1 in Brink, 2010, for an overview of the runs):
 - **`brink_2010-300_bathymetry.jld2`**: Bathymetric data.
-- **`brink_2010-300.jld2`**: Model output fields. (Time resolution is 1 day to keep file sizes manageable.)
+- **`brink_2010-300.jld2`**: Model output fields. (Time resolution is 1 forcing period to keep file sizes manageable.)
 
 
 ## Setting up the Julia environment
