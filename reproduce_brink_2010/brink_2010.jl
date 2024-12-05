@@ -65,7 +65,7 @@ hc = 59meters
 
 # overwrite parameters and functions with configuration file, if provided
 if length(ARGS)==1
-    include(ARGS[1])
+    include("../"*ARGS[1])
 end
 
 # parameters based on provided parameters
@@ -115,13 +115,6 @@ b(x, y) = -hᵢ(x, y)
 # Model parameters
 gravitational_acceleration = 9.81
 coriolis = FPlane(f=f)
-  
-
-flux_bc = FluxBoundaryCondition(hflux, field_dependencies=:h, parameters=(; c, hA, h2))
-h_bcs = FieldBoundaryConditions(FluxBoundaryCondition(nothing), east=flux_bc)
-
-free_slip_bc = FluxBoundaryCondition(nothing)
-free_slip_field_bcs = FieldBoundaryConditions(free_slip_bc)
 
 # turbulence closure, by default set to zero 
 closure = ShallowWaterScalarDiffusivity(ν = ν)
@@ -142,7 +135,7 @@ model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration,
 set!(model, h=hᵢ)
 
 # plot bathymetry
-figurepath = "figures/brink/bathymetry/"
+figurepath = "../figures/brink/bathymetry/"
 fig = Figure(size = (800, 800))
 axis = Axis(fig[1,1], 
         aspect = DataAspect(),
@@ -185,16 +178,20 @@ bath = model.bathymetry
 # v∂u∂y = v*∂u∂y    # TODO do I need this therm for contour following stuff?
 
 ω = Field(∂x(v) - ∂y(u))
-ωu = ω*u 
-ωv = ω*v
+ωu = Field(ω*u) 
+ωv = Field(ω*v)
+
+
+divωflux = Field(∂x(ωu) + ∂y(ωv))
 
 fields = Dict("u" => u, "v" => v, 
               "h" => h, "omega" => ω,
-              "omegau" => ωu, "omegav" => ωv
+              "omegau" => ωu, "omegav" => ωv,
+            #  "divomegaflux" => divωflux
               )
 
 simulation.output_writers[:field_writer] = NetCDFOutputWriter(model, fields, 
-                        filename = "output/brink/"*name*".nc",
+                        filename = "../output/brink/"*name*".nc",
                         schedule = AveragedTimeInterval(outputtime),
                         overwrite_existing = true
                         )
