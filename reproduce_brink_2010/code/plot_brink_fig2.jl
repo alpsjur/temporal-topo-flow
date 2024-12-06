@@ -47,7 +47,7 @@ for i in 1:length(times)
 end
 
 # Define averaging parameters for time-averaged fields
-T = 2                       # Average over 2 forcing periods (one forcing period per time step) 
+T = 1                       # Average over 2 forcing periods (one forcing period per time step) 
 Tend = length(times)        # Final timestep index
 
 # Compute time-averaged fields
@@ -73,7 +73,7 @@ arrows!(
     xc[stepstart:step:end], yc[stepstart:step:end],
     U[stepstart:step:end, stepstart:step:end],
     V[stepstart:step:end, stepstart:step:end],
-    lengthscale=8e1  # Scale arrow length
+    lengthscale=16e1  # Scale arrow length
 )
 
 # Add bathymetry contours
