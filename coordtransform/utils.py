@@ -39,7 +39,7 @@ def G(y, g, k):
     return g*np.sin(k*y)
 
 # Define the vectorized H function
-def H(x, y, x1, x2, hA, h0, h1, h2, A, B, g, k, G):
+def H(x, y, x1, x2, hA, h0, h1, h2, A, B, g, k, G=G):
     # Calculate the three possible cases
     case1 = hA + h0 + A * x + h1 * G(y, g, k) * x / x1
     case2 = hA + h1 + B * (x - x1) + h1 * G(y, g, k) * (x2 - x) / (x2 - x1)

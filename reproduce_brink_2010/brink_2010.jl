@@ -181,17 +181,16 @@ bath = model.bathymetry
 ωu = Field(ω*u) 
 ωv = Field(ω*v)
 
-
 divωflux = Field(∂x(ωu) + ∂y(ωv))
 
 fields = Dict("u" => u, "v" => v, 
               "h" => h, "omega" => ω,
               "omegau" => ωu, "omegav" => ωv,
-            #  "divomegaflux" => divωflux
+              "divomegaflux" => divωflux
               )
 
 simulation.output_writers[:field_writer] = NetCDFOutputWriter(model, fields, 
-                        filename = "../output/brink/"*name*".nc",
+                        filename = "output/brink/netCDF/"*name*".nc",
                         schedule = AveragedTimeInterval(outputtime),
                         overwrite_existing = true
                         )

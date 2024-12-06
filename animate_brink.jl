@@ -10,7 +10,7 @@ using RollingFunctions  # For applying rolling window functions
 filepath = "output/brink/"
 #fullfilename = ARGS[1]
 #filename = split(fullfilename, "/")[end][1:end-3]
-filename = "brink_2010-361"
+filename = "brink_2010-329-period_016"
 
 # Visualization step interval for vector fields
 step = 4

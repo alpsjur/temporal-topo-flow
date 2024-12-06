@@ -6,12 +6,12 @@ import seaborn as sns
 from cmcrameri import cm
 from scipy.ndimage import uniform_filter1d
 
-from coordtransform.utils import params, xt_from_y, dl_fromxt_yt, dt
+from coordtransform.utils import params, xt_from_y, dl_fromxt_yt, dt, H
 
 sns.set_style("whitegrid")
 
 # Define parameters and file paths
-name = "brink_2010-361"
+name = "brink_2010-300-period_004"
 
 xvals = (30, 35, 40, 45, 50)
 Tinc = 12 * 8
@@ -37,16 +37,27 @@ window = int(outputtime / delta_t)
 
 # Load data 
 ds = xr.open_dataset(filepath + name + ".nc")
+
+rename_map = {
+    "xu": "xF",
+    "xv": "xC",
+    "yu": "yC",
+    "yv": "yF"
+}
+
+# Check if the coordinates exist and only rename the ones that are present
+existing_coords = {key: value for key, value in rename_map.items() if key in ds.coords}
+
+# Rename coordinates
+ds = ds.rename(existing_coords)
+
+
 u = ds.u  # u-component of velocity field
 v = ds.v  # v-component of velocity field
-h = ds.h
-t = ds.time
-t_hr = np.arange(0, t[-1] + 1, 2)
-t_days = t / (24 * 60 * 60)  # Convert time to days
+t = ds.time / np.timedelta64(1, 's')
+t_days =  ds.time / np.timedelta64(1, 'D')
+t_hr = np.arange(0, len(t)*outputtime, 2)
 
-
-# construct depths from h
-depths = h.mean(dim="yu").values
 
 # Construct depth-following grid
 Lx = params["grid"]["Lx"]
@@ -65,13 +76,19 @@ k = params["derived"]["k"]
 Nx = params["derived"]["Nx"]
 Ny = params["derived"]["Ny"]
 Nl = params["derived"]["Nl"]
+A = params["derived"]["A"]
+B = params["derived"]["B"]
 
-hA = 500    # TODO implement this parameter in utils
+hA = 0    # TODO implement this parameter in utils
 
 x = np.arange(0, Lx, dx)
 y = np.arange(0, Ly, dy)
 
 X, Y = np.meshgrid(x, y)
+h = H(X, Y, x1, x2, hA, h0, h1, h2, A, B, g, k)
+
+# construct depths from h
+depths = h.mean(axis=0)
 
 ## Create contour folowing grid
 Yt = Y.copy()
@@ -108,8 +125,8 @@ contour_grid = xr.Dataset(
 )
 
 # contour folowing velocities
-ut = u.interp(xu=contour_grid.x, yu=contour_grid.y)
-vt = v.interp(xv=contour_grid.x, yv=contour_grid.y)
+ut = u.interp(xF=contour_grid.x, yC=contour_grid.y)
+vt = v.interp(xC=contour_grid.x, yF=contour_grid.y)
 Ut = ut*contour_grid.dtdy - vt*contour_grid.dtdx
 Vt = ut*contour_grid.dtdx + vt*contour_grid.dtdy
 
@@ -132,8 +149,9 @@ for i, xval in enumerate(xvals):
     color = colors[i]
     H = depths[xval]
     Hs.append(H)
+    cL = contour_grid.dl.sel(i=xval).sum(dim=("j")).values
 
-    analytical_hr = -d / rho * (R * np.sin(omega * t_hr) - H * omega * np.cos(omega * t_hr) +
+    analytical_hr = -d * L / (rho * cL ) * (R * np.sin(omega * t_hr) - H * omega * np.cos(omega * t_hr) +
                                 np.exp(-R * t_hr / H) * H * omega) / (H**2 * omega**2 + R**2)
     analytical = uniform_filter1d(analytical_hr, size=window)[::window] * 1e2  # Convert to cm/s
 
@@ -160,15 +178,15 @@ figscatter.tight_layout()
 figts.tight_layout()
 
 # Save figures
-figscatter.savefig(figurepath + "scatter/" + name + "_scatter_Hcontour.png")
-figts.savefig(figurepath + "timeseries/" + name + "_analytical_ts_Hcontour.png")
+figscatter.savefig(figurepath + "linear_scatter/" + name + "_scatter_Hcontour.png")
+figts.savefig(figurepath + "linear_timeseries/" + name + "_analytical_ts_Hcontour.png")
 
 
 # plot also contours
 fig, ax = plt.subplots(figsize=(6,6))
-ax.pcolormesh(h.sel(xv=slice(None,90e3)), cmap="Grays", alpha=0.7)
-ax.contour(h.sel(xv=slice(None,90e3)), levels=Hs, colors=colors)
-fig.savefig(figurepath + "timeseries/" + "Hcontours.png")
+ax.pcolormesh(h[:,:90], cmap="Grays", alpha=0.7)
+ax.contour(h[:,:90], levels=Hs, colors=colors)
+fig.savefig(figurepath + "linear_timeseries/" + "Hcontours.png")
 
 
 # Show plots (optional, for interactive environments)
