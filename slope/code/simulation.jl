@@ -96,7 +96,7 @@ DS = params["DS"]
 DB = params["DB"]
 sigma = params["sigma"]
 a = params["a"]
-lambda = params["lam"]
+lam = params["lam"]
 noise = params["noise"]
 
 # Define bathymetry
@@ -138,7 +138,7 @@ function ty(x, y, t, u, v, h, p)
 end
 
 # Define bathymetry functions
-h_i_func(x, y) = h_i(x, y, (; XC=params["XC"], W=params["W"], DS=params["DS"], DB=params["DB"], a=params["a"], lambda=params["lambda"], sigma=params["sigma"], noise=params["noise"]))
+h_i_func(x, y) = h_i(x, y, (; XC, W, DS, DB, a, lam, sigma, noise))
 b_func(x, y) = -h_i_func(x, y)
 
 # Coriolis
