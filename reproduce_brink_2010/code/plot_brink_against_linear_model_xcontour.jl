@@ -9,11 +9,12 @@ using ColorSchemes
 using Random 
 using RollingFunctions  
 
-name = "300-period_004.jl"
+name = "300-period_128.jl"
 xvals = (30, 35, 40, 45, 50)
 #xvals = (45)
 
 Tinc = 12*8
+full = true
 
 filepath = "output/brink/"
 figurepath = "figures/brink/"
@@ -22,7 +23,7 @@ cmap = ColorSchemes.batlow
 # Forcing parameters
 ρ   = 1e3
 d   = 0.1
-T   = 4days
+T   = 128days
 R   = 5e-4  
 L   = 90kilometers
 
@@ -75,16 +76,14 @@ for i in eachindex(xvals)
 
     numerical = -mean(v[xval,:,1,:], dims=(1))[1,1:end-1]*1e2
 
-    # lines!(axts, t, numerical,  color=color, label = string(xval))
-    # lines!(axts, t, analytical,  color=color, linestyle=:dash)
-
-    # lines!(axts, t[1: Tinc], numerical[1: Tinc], color=color, label = string(xval))
-    # lines!(axts, t[1: Tinc], analytical[1: Tinc],  color=color, linestyle=:dash)
-
-    lines!(axts, t[end-Tinc: end], numerical[end-Tinc: end], color=color, label = string(xval))
-    lines!(axts, t[end-Tinc: end], analytical[end-Tinc: end],  color=color, linestyle=:dash)
+    if full
+        lines!(axts, t, numerical,  color=color, label = string(xval))
+        lines!(axts, t, analytical,  color=color, linestyle=:dash)
+    else
+        lines!(axts, t[end-Tinc: end], numerical[end-Tinc: end], color=color, label = string(xval))
+        lines!(axts, t[end-Tinc: end], analytical[end-Tinc: end],  color=color, linestyle=:dash)
+    end
     
-
     scatter!(axscatter, analytical, numerical, 
         label = string(xval),
         markersize = 4,
@@ -97,5 +96,5 @@ end
 axislegend(axscatter, position = :rb)
 axislegend(axts, position = :rb)
 
-save(figurepath*name*"_scatter_xcontour.png", figscatter)
-save(figurepath*name*"_analytical_ts_xcontour.png", figts)
+save(figurepath*"linear_timeseries/"*name*"_scatter_xcontour.png", figscatter)
+save(figurepath*"linear_scatter/"*name*"_analytical_ts_xcontour.png", figts)
