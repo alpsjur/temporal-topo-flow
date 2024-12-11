@@ -34,7 +34,7 @@ default_params = {
     "DS": 800.0,
     "DB": 100.0,
     "sigma": 1.0,            
-    "a": 1e3,               
+    "a": 10e3,               
     "lam": 45e3,           
     "noise": False,
 }
@@ -210,3 +210,45 @@ def depth_following_grid(params):
     )
     
     return contour_grid
+
+def get_h(params):
+    Lx = params["Lx"]
+    Ly = params["Ly"]
+    dx = params["dx"]
+    dy = params["dy"]
+    
+    x = np.arange(0, Lx, dx)
+    y = np.arange(0, Ly, dy)
+
+    X, Y = np.meshgrid(x, y)
+
+    h = H(X, Y, params)
+    
+    return h
+    
+def analytical_circ(params, t, cL, H, nonlin=None):
+    #from scipy.ndimage import uniform_filter1d
+    T = params["T"]
+    outputtime = params["outputtime"]
+    dt = params["dt"]
+    Ly = params["Ly"]
+    rho = params["rho"]
+    R = params["R"]
+    d = params["d"]
+
+    omega = 2 * np.pi / T
+    t_hr = np.arange(0, len(t)*outputtime, dt)
+    window = round(outputtime / dt)  
+    
+    windforce_hr = -d*Ly*np.sin(omega * t_hr)/(rho*H*cL)
+    forcing = windforce_hr.reshape(-1, window).mean(axis=1)
+    #forcing = uniform_filter1d(windforce_hr, size=window)[::window]
+    
+    if nonlin is not None:
+        forcing += nonlin
+        
+    analytical = np.zeros_like(t)
+    for i in np.arange(1,len(t)):
+        filtered_forcing = np.exp(-R*(t[i:0:-1])/H)*forcing[:i]
+        analytical[i] = np.sum(filtered_forcing*outputtime)
+    return analytical
