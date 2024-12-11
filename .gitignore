@@ -25,6 +25,10 @@ docs/site/
 # environment.
 Manifest.toml
 
+
+# Python stuff
+__pycache__/
+
 ### Other ###
 configs/run*
 

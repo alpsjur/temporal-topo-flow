@@ -4,28 +4,30 @@ import matplotlib.pyplot as plt
 import xarray as xr  
 import seaborn as sns
 from cmcrameri import cm
-from scipy.ndimage import uniform_filter1d
+import sys
+import os
 
-from coordtransform.utils import params, xt_from_y, dl_fromxt_yt, dt, H
+sys.path.append(os.path.abspath("reproduce_brink_2010/coordtransform/"))
+from utils import params, xt_from_y, dl_fromxt_yt, dt, H
 
 sns.set_style("whitegrid")
 
 # Define parameters and file paths
-name = "brink_2010-329"
+name = "brink_2010-300-period_064"
 
 xvals = (30, 35, 40, 45, 50)
-Tinc = 12 * 8
-full = False
+Tinc = 20 * 8
+full = True
 
-filepath = "output/brink/"
-figurepath = "figures/brink/"
+filepath = "reproduce_brink_2010/output/brink/"
+figurepath = "reproduce_brink_2010/figures/brink/"
 cmap = cm.batlow 
 
 # Forcing parameters
 rho = 1e3
 d = 0.1
-T = 4 * 24 * 60 * 60  # forcing period in seconds
-R = 0.5e-4
+T = 64 * 24 * 60 * 60  # forcing period in seconds
+R = 5e-4
 L = 90 * 1e3  # 90 kilometers in meters
 
 outputtime = 3 * 60 * 60  # 3 hours in seconds
@@ -37,6 +39,7 @@ window = int(outputtime / delta_t)
 
 # Load data 
 ds = xr.open_dataset(filepath + name + ".nc").squeeze()
+print(ds)
 
 rename_map = {
     "xu": "xF",
@@ -163,12 +166,16 @@ for i, xval in enumerate(xvals):
     # Enten være nøyere med definering av dl, eller regne ut virvlingsflux på en mer robust måte
     nonlin = vortflux.sel(i=xval).sum(dim="j").values/cL
     
+    
     windforce_hr = -d*L*np.sin(omega * t_hr)/(rho*H*cL)
     windforce = windforce_hr.reshape(-1, window).mean(axis=1)
-
     
-    filtered_forcing = np.exp(-R/H*(t[::-1]))*(windforce+nonlin)
-    analytical = np.cumsum(filtered_forcing*outputtime)
+    forcing = (windforce+nonlin)
+
+    analytical = np.zeros_like(t)
+    for i in np.arange(1,len(t)):
+        filtered_forcing = np.exp(-R*(t[i:0:-1])/H)*forcing[:i]
+        analytical[i] = np.sum(filtered_forcing*outputtime)
     analytical *= 1e2
 
     numerical = -(Vt*contour_grid.dl).sel(i=xval).sum(dim=("j"))/cL * 1e2 
@@ -183,7 +190,8 @@ for i, xval in enumerate(xvals):
         # Plot analytical and numerical data over time
         axts.plot(t_days[-Tinc:], numerical[-Tinc:], color=color, label=str(round(H)))
         axts.plot(t_days[-Tinc:], analytical[-Tinc:], color=color, linestyle="--")
-        #axts.plot(t_days[-Tinc:], nonlin[-Tinc:]*1e7, color=color, linestyle="--")
+        # axts.plot(t_days[:Tinc], numerical[:Tinc], color=color, label=str(round(H)))
+        # axts.plot(t_days[:Tinc], analytical[:Tinc], color=color, linestyle="--")
 
     # Scatter plot of analytical vs. numerical data
     axscatter.scatter(analytical, numerical, label=str(round(H)), s=16, alpha=0.7, color=color)

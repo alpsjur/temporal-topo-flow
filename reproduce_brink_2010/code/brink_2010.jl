@@ -134,7 +134,7 @@ model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration,
 # set initial conditions
 set!(model, h=hᵢ)
 
-# plot bathymetry
+# plot bathymetry 
 figurepath = "../figures/brink/bathymetry/"
 fig = Figure(size = (800, 800))
 axis = Axis(fig[1,1], 
