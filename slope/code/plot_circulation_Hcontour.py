@@ -4,32 +4,11 @@ import matplotlib.pyplot as plt
 import xarray as xr
 import seaborn as sns
 from cmcrameri import cm
-from utils import default_params, load_config, depth_following_grid, get_h, analytical_circ
+from utils import depth_following_grid, get_h, analytical_circ, \
+    load_parameters, load_dataset, truncate_time_series 
 
 # Configure seaborn style
 sns.set_style("whitegrid")
-
-def load_parameters():
-    """Load simulation parameters either from a configuration file or defaults."""
-    if len(sys.argv) == 2:
-        config_path = sys.argv[1]
-        print(f"Loading configuration from {config_path}")
-        return load_config(config_path, default_params)
-    else:
-        print("No configuration file provided. Using default parameters.")
-        return default_params
-
-def load_dataset(filepath, name):
-    """Load the dataset from a NetCDF file."""
-    return xr.open_dataset(filepath + name + ".nc").squeeze()
-
-def truncate_time_series(ds):
-    """Truncate time series if a blow-up in velocity is detected."""
-    if np.abs(ds.v).max() > 1.5:
-        tstop = np.nonzero(np.abs(ds.v).max(dim=("xC", "yF")).values > 1.5)[0][0]
-        print("Blow-up in velocity, truncating time series.")
-        return ds.isel(time=slice(None, tstop))
-    return ds
 
 def compute_contour_following_velocities(u, v, grid):
     """Calculate contour-following velocities."""
@@ -73,7 +52,7 @@ def setup_plots():
     axvort[1].set_xlabel("numerical circ [cm s-1]")
     #axvort[1].set_aspect("equal")
 
-    figts, [axts, axalign] = plt.subplots(figsize=(12, 4), nrows=2, sharex=True)
+    figts, [axts, axalign] = plt.subplots(figsize=(16, 10), nrows=2, sharex=True)
     #axts.set_xlabel("time [days]")
     axts.set_ylabel("circ [cm s-1]")
     axalign.set_xlabel("time [days]")

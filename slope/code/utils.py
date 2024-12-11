@@ -252,3 +252,27 @@ def analytical_circ(params, t, cL, H, nonlin=None):
         filtered_forcing = np.exp(-R*(t[i:0:-1])/H)*forcing[:i]
         analytical[i] = np.sum(filtered_forcing*outputtime)
     return analytical
+
+
+def load_parameters():
+    """Load simulation parameters either from a configuration file or defaults."""
+    import sys
+    if len(sys.argv) == 2:
+        config_path = sys.argv[1]
+        print(f"Loading configuration from {config_path}")
+        return load_config(config_path, default_params)
+    else:
+        print("No configuration file provided. Using default parameters.")
+        return default_params
+
+def load_dataset(filepath, name):
+    """Load the dataset from a NetCDF file."""
+    return xr.open_dataset(filepath + name + ".nc").squeeze()
+
+def truncate_time_series(ds):
+    """Truncate time series if a blow-up in velocity is detected."""
+    if np.abs(ds.v).max() > 1.5:
+        tstop = np.nonzero(np.abs(ds.v).max(dim=("xC", "yF")).values > 1.5)[0][0]
+        print("Blow-up in velocity, truncating time series.")
+        return ds.isel(time=slice(None, tstop))
+    return ds
