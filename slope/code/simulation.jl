@@ -1,4 +1,5 @@
 using Oceananigans
+using Oceananigans.Units
 using Random
 using Statistics
 using Printf                   
@@ -49,7 +50,7 @@ default_params = Dict(
     "DS" => 800.0,              # Depth change between shelf and basin
     "DB" => 100.0,              # Depth of shelf
     "sigma" => 1.0,             # Standard deviation of noise
-    "a" => 1e3,                 # Horizontal length scale of corrigations
+    "a" => 10e3,                 # Horizontal length scale of corrigations
     "lam" => 45e3,              # Wave length of corriations
     "noise" => false
 )
@@ -189,6 +190,10 @@ u, v, h = model.solution
 bath = model.bathymetry
 eta = h + bath
 
+uvh = Field(u*v*h)
+duvhdx = Field(∂x(uvh))
+detady = Field(∂y(eta))
+
 omega_field = Field(∂x(v) - ∂y(u))
 omega_u = Field(omega_field * u)
 omega_v = Field(omega_field * v)
@@ -198,7 +203,9 @@ divomega_flux = Field(∂x(omega_u) + ∂y(omega_v))
 fields = Dict("u" => u, "v" => v, 
               "h" => h, "omega" => omega_field,
               "omegau" => omega_u, "omegav" => omega_v,
-              "divomegaflux" => divomega_flux)
+              "divomegaflux" => divomega_flux,
+              "duvhdx" => duvhdx, "detady" => detady
+              )
 
 simulation.output_writers[:field_writer] = NetCDFOutputWriter(model, fields, 
                         filename=filepath * name * ".nc",
