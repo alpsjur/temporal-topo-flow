@@ -53,6 +53,7 @@ def plot_results(params, ds, xvals, t, t_days, cmap):
 
 def main():
     try:
+        
         params = load_parameters()
         ds = load_dataset(params["filepath"], params["name"])
         ds = truncate_time_series(ds)
