@@ -38,6 +38,8 @@ default_params = Dict(
     "rho" => 1e3,
     "d" => 0.1,
     "T" => 4 * 86400.0,          # 4 days in seconds
+    "dn" => 0,
+    "Tn" => 0,
     "R" => 5e-4,
 
     # Coriolis and gravity
@@ -89,6 +91,8 @@ outputtime = params["outputtime"]
 rho = params["rho"]
 d = params["d"]
 T = params["T"]
+dn = params["dn"]
+Tn = params["Tn"]
 R = params["R"]
 f = params["f"]
 gravitational_acceleration = params["gravitational_acceleration"]
@@ -118,6 +122,7 @@ end
 
 # Parameters based on provided configuration
 omega = 2 * pi / T
+omegan = 2 * pi / Tn
 Nx = Int(Lx / dx)
 Ny = Int(Ly / dy)
 
@@ -128,12 +133,12 @@ grid = RectilinearGrid(architecture,
                        topology=(Bounded, Periodic, Flat))
 
 # Set up parameters given to forcing function                   
-tx_parameters = (; R)
+tx_parameters = (; rho, dn, omegan, R)
 ty_parameters = (; rho, d, omega, R)
 
 # Define forcing functions
 function tx(x, y, t, u, v, h, p)
-    return -p.R * u / h
+    return -p.R * u / h + p.dn * sin(p.omegan * t) / (p.rho * h)
 end
 
 function ty(x, y, t, u, v, h, p)

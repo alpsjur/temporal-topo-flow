@@ -30,6 +30,8 @@ default_params = {
     "rho": 1e3,
     "d": 0.1,
     "T": 4 * 86400.0,
+    "dn" : 0,
+    "Tn" : 0,
     "R": 5e-4,
     "f": 1e-4,
     "gravitational_acceleration": 9.81,
