@@ -39,7 +39,7 @@ default_params = Dict(
     "d" => 0.1,
     "T" => 4 * 86400.0,          # 4 days in seconds
     "dn" => 0,
-    "Tn" => 0,
+    "Tn" => 86400.0,
     "R" => 5e-4,
 
     # Coriolis and gravity
@@ -109,7 +109,8 @@ noise = params["noise"]
 # Define bathymetry
 function h_i(x, y, p)
     if x < (p.XC + p.W)                # slope
-        corr = p.a * sin.(2 * pi * y / p.lam)    
+        slope = (sech.(pi * (x - p.XC) / p.W).^2) #* (pi*p.DS)/(2*p.W) 
+        corr = p.a * sin.(2 * pi * y / p.lam) #* slope                                 
         h = p.DB + 0.5 * p.DS * (1 + tanh.(pi * (x - p.XC - corr) / p.W))
     else                               # central basin
         h = p.DB + p.DS
@@ -152,10 +153,27 @@ b_func(x, y) = -h_i_func(x, y)
 # Coriolis
 coriolis = FPlane(f=f)
 
+# # Trying to implement radiative boundary conditions
+# # Define speed of gravity wave
+# c = sqrt(gravitational_acceleration*(DS+DB))
+
+# hflux_parameters = (; c, DS, DB)
+# @inline hflux(y, t, h, p) = (h-(p.DS+p.DB))*p.c
+
+# flux_bc = FluxBoundaryCondition(hflux, field_dependencies=:h, parameters=hflux_parameters)
+# h_bcs = FieldBoundaryConditions(FluxBoundaryCondition(nothing), east=flux_bc)
+
+# free_slip_bc = FluxBoundaryCondition(nothing)
+# free_slip_field_bcs = FieldBoundaryConditions(free_slip_bc)
+
 # Create model
 model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration,
                           momentum_advection=VectorInvariant(),
                           bathymetry=b_func,
+                        #   boundary_conditions = (u = free_slip_field_bcs, 
+                        #                          v = free_slip_field_bcs, 
+                        #                          h = h_bcs
+                        #                          ),
                           formulation=VectorInvariantFormulation(),
                           forcing=(u=Forcing(tx, field_dependencies=(:u, :v, :h), parameters=tx_parameters),
                                    v=Forcing(ty, field_dependencies=(:u, :v, :h), parameters=ty_parameters)))

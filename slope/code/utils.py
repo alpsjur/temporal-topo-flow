@@ -5,6 +5,7 @@ import json
 import xarray as xr
 import numpy as np
 import json
+from scipy.optimize import fsolve
 
 # ================================
 # Default Parameters
@@ -31,7 +32,7 @@ default_params = {
     "d": 0.1,
     "T": 4 * 86400.0,
     "dn" : 0,
-    "Tn" : 0,
+    "Tn" : 86400.0,
     "R": 5e-4,
     "f": 1e-4,
     "gravitational_acceleration": 9.81,
@@ -85,7 +86,9 @@ def calculate_bathymetry(x, y, params):
     XC = params["XC"]
     W = params["W"]
 
-    corr = a * np.sin(2 * np.pi * y / lam)
+    steepness = (1/np.cosh(np.pi * (x - XC) / W)**2)
+
+    corr = a * np.sin(2 * np.pi * y / lam) * steepness
     slope = DB + 0.5 * DS * (1 + np.tanh(np.pi * (x - XC - corr) / W))
     basin = DB + DS
 
@@ -111,7 +114,10 @@ def get_h(params):
 # ================================
 
 def calculate_xt(y, H, params):
-    """Compute x-coordinates along a contour based on depth."""
+    """Compute x-coordinates along a contour based on depth.
+    
+    If y is a vector, solve for each element separately.
+    """
     W = params["W"]
     DB = params["DB"]
     DS = params["DS"]
@@ -119,12 +125,24 @@ def calculate_xt(y, H, params):
     a = params["a"]
     lam = params["lam"]
 
-    x0 = -W * np.arctanh((2 * DB - 2 * H + DS) / DS) / np.pi + XC
-    xt = a * np.sin(2 * np.pi * y / lam) + x0
+    # Define function to solve for a single y value
+    def solve_xt(y_val):
+        x0 = XC + W / np.pi * np.arctanh((2 * (H - DB)) / DS - 1)
 
-    # Constrain xt to valid range
-    xt = np.clip(xt, 0, XC + W)
-    return xt
+        def implicit_eq(x):
+            x = np.atleast_1d(x)  # Ensure x is array-like
+            steepness = 1 / np.cosh(np.pi * (x - XC) / W) ** 2
+            corr = a * np.sin(2 * np.pi * y_val / lam) * steepness
+            return x - (XC + W / np.pi * np.arctanh((2 * (H - DB)) / DS - 1) + corr)
+
+        xt = fsolve(implicit_eq, np.array([x0]))[0]  # Solve for x
+        return np.clip(xt, 0, XC + W)
+
+    # Check if y is a scalar or an array
+    if np.isscalar(y):
+        return solve_xt(y)  # Solve for a single y
+    else:
+        return np.array([solve_xt(y_val) for y_val in y])  # Solve for each y separately
 
 def compute_contour_vectors(y, H, params):
     """Compute vectors along depth-following contours."""
@@ -163,7 +181,7 @@ def _depth_following_contour_variables(params, H):
     Nl = Ly//lam
 
     yt = np.arange(dy/2, Ly+dy/2, dy)
-    
+
     xt = calculate_xt(yt, H, params)
     dxt, dyt = compute_contour_vectors(yt, H, params)
     dlt = calculate_contour_lengths(xt, yt, Ny, Nl, upstream=True)
