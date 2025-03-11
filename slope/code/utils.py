@@ -24,7 +24,7 @@ default_params = {
 
     # Simulation settings
     "dt": 2.0,
-    "tmax": 64 * 86400.0,
+    "tmax": 128 * 86400.0,
     "outputtime": 3 * 3600.0,
 
     # Forcing parameters
@@ -86,7 +86,7 @@ def calculate_bathymetry(x, y, params):
     XC = params["XC"]
     W = params["W"]
 
-    steepness = (1/np.cosh(np.pi * (x - XC) / W)**2)
+    steepness = (1/np.cosh(np.pi * (x - XC) / W))**2
 
     corr = a * np.sin(2 * np.pi * y / lam) * steepness
     slope = DB + 0.5 * DS * (1 + np.tanh(np.pi * (x - XC - corr) / W))
@@ -101,8 +101,8 @@ def get_h(params):
     dx = params["dx"]
     dy = params["dy"]
 
-    x = np.arange(0, Lx, dx)
-    y = np.arange(0, Ly, dy)
+    x = np.arange(dx/2, Lx-dx/2, dx)
+    y = np.arange(dy/2, Ly-dy/2, dy)
 
     X, Y = np.meshgrid(x, y)
     h = calculate_bathymetry(X, Y, params)
@@ -147,10 +147,15 @@ def calculate_xt(y, H, params):
 def compute_contour_vectors(y, H, params):
     """Compute vectors along depth-following contours."""
     xt = calculate_xt(y, H, params)
-    dxt = 2 * np.pi * params["a"] / params["lam"] * np.cos(2 * np.pi * y / params["lam"])
+ 
+    #xtext = np.concatenate((xt[-1], xt, xt[0]),axis=0)
+    xtext = np.insert(xt, (0, -1), (xt[-1], xt[0]))
+    dxt = np.gradient(xtext)[1:-1]
+    #dxt = (xtext[2:]-xtext[1:-1])
+
 
     # Normalize vectors
-    dyt = np.ones_like(dxt)
+    dyt = np.ones_like(dxt)*params["dy"]
     norm = np.sqrt(dxt**2 + dyt**2)
 
     return dxt / norm, dyt / norm
@@ -164,11 +169,13 @@ def calculate_contour_lengths(x, y, Ny, Nl, upstream=False):
     dl_result = np.zeros_like(x)
     if upstream:
         dl_result[1:] = dl
-        dl_result[0] = dl[int(Ny / Nl) - 1]
+        # use dl info from equivalent place at other part along nathymetry wave
+        dl_result[0] = dl[int(Ny / (2*Nl)) - 1]
     else:
         dl_result[1:-1] = (dl[:-1] + dl[1:]) / 2
-        dl_result[0] = dl[int(Ny / Nl) - 1]
-        dl_result[-1] = dl[int(Ny / Nl) - 2]
+        # use dl info from equivalent place at other part along nathymetry wave
+        dl_result[0] = dl[int(Ny / (2*Nl)) - 1]
+        dl_result[-1] = dl[int(Ny / (2*Nl)) - 2]
 
     return dl_result
 
@@ -269,49 +276,6 @@ def depth_following_grid(params):
     )
 
 # ================================
-# Analytical Models
-# ================================
-
-def analytical_circ(params, t, cL, H, nonlin=None):
-    """
-    Compute the analytical circulation for a given time series.
-
-    Parameters:
-        params (dict): Simulation parameters.
-        t (array): Time series.
-        cL (float): Characteristic length scale.
-        H (float): Depth.
-        nonlin (float, optional): Non-linear component.
-
-    Returns:
-        array: Analytical circulation over time.
-    """
-    T = params["T"]
-    outputtime = params["outputtime"]
-    dt = params["dt"]
-    Ly = params["Ly"]
-    rho = params["rho"]
-    R = params["R"]
-    d = params["d"]
-
-    omega = 2 * np.pi / T
-    t_hr = np.arange(0, len(t) * outputtime, dt)
-    window = round(outputtime / dt)
-
-    windforce_hr = -d * Ly * np.sin(omega * t_hr) / (rho * H * cL)
-    forcing = windforce_hr.reshape(-1, window).mean(axis=1)
-
-    if nonlin is not None:
-        forcing += nonlin / cL
-
-    analytical = np.zeros_like(t)
-    for i in range(1, len(t)):
-        filtered_forcing = np.exp(-R * (t[i:0:-1]) / H) * forcing[:i]
-        analytical[i] = np.sum(filtered_forcing * outputtime)
-
-    return analytical
-
-# ================================
 # Helper Functions and Utilities
 # ================================
 
@@ -369,3 +333,138 @@ def truncate_time_series(ds):
     return ds
 
 
+def axes_styling(ax):
+    #ax.spines['left'].set_position('zero')
+    ax.spines['top'].set_color('none')
+    ax.spines['right'].set_color('none')
+    ax.xaxis.tick_bottom()
+    
+    ax.spines['left'].set_color('lightgray')
+    ax.spines['bottom'].set_color('lightgray')
+
+
+# ================================
+# Analytical Models
+# ================================
+
+def windforcing(t, params):
+    
+    T = params["T"]
+    outputtime = params["outputtime"]
+    rho = params["rho"]
+    d = params["d"]
+    dt = params["dt"]
+    
+    omega = 2 * np.pi / T
+    t_hr = np.arange(0, len(t) * outputtime, dt)
+    window = round(outputtime / dt)
+
+    windforce_hr = -d * np.sin(omega * t_hr) / (rho)
+    forcing = windforce_hr.reshape(-1, window).mean(axis=1)
+    
+    return forcing
+
+def analytical_circ(params, t, cL, H, nonlin=None):
+    """
+    Compute the analytical circulation for a given time series.
+
+    Parameters:
+        params (dict): Simulation parameters.
+        t (array): Time series.
+        cL (float): Contour length.
+        H (float): Depth.
+        nonlin (float, optional): Non-linear component.
+
+    Returns:
+        array: Analytical circulation over time.
+    """
+    R = params["R"]
+    Ly = params["Ly"]
+    outputtime = params["outputtime"]
+    
+    forcing = windforcing(t, params)* Ly/(cL*H)
+
+    if nonlin is not None:
+        forcing += nonlin / cL
+
+    analytical = np.zeros_like(t)
+    for i in range(1, len(t)):
+        filtered_forcing = np.exp(-R * (t[i:0:-1]) / H) * forcing[:i]
+        analytical[i] = np.sum(filtered_forcing * outputtime)
+
+    return analytical
+
+def integrated_zonal_momentum_terms(params, ds, xidx):
+    f = params["f"]
+    R = params["R"]
+    g = params["gravitational_acceleration"]
+    dt = params["outputtime"]
+
+    t = ds.time / np.timedelta64(1, 's')
+    uF = ds.u 
+    uC = 0.5*(uF.isel(xF = xidx) + uF.isel(xF = xidx+1)).squeeze()
+    
+    x = ds.xC.isel(xC=xidx).values
+    yC = ds.yC.values
+    yF = ds.yF.values
+    
+    # hC = ds.h.isel(xC = xidx)
+    # hC_ext = xr.concat([hC, hC.isel(yC=0)], dim="yC")
+    # hF = 0.5 * (hC_ext.isel(yC=slice(0, -1)) + hC_ext.isel(yC=slice(1, None)))
+    # hF = hF.rename({'yC': 'yF'}).assign_coords(yF=yF)
+    
+    hC = calculate_bathymetry(x, yC, params)
+    hF = calculate_bathymetry(x, yF, params)
+    
+    surfstress = -windforcing(t, params)
+    nonlin = -ds.duvhdx.isel(xC=xidx).mean("yC")
+    massflux = -(f*hC*uC).mean("yC")
+    formstress = -(g*hF*ds.detady.isel(xC=xidx)).mean("yF")
+    bottomstress = -R*ds.v.isel(xC=xidx).mean("yF")                # TODO ganger ikke med H her.
+    
+    surfstressi = np.cumsum(surfstress*dt)
+    nonlini = (nonlin*dt).cumsum("time")
+    massfluxi = (massflux*dt).cumsum("time")
+    formstressi = (formstress*dt).cumsum("time")
+    bottomstressi = (bottomstress*dt).cumsum("time")
+
+    terms = xr.Dataset(
+        data_vars=dict(
+            surfstress = (["time"], surfstress),
+            nonlin = nonlin,
+            massflux = massflux,
+            formstress = formstress,
+            bottomstress = bottomstress
+        ),
+        coords=dict(
+            time = ds.time
+        ),
+    ).squeeze()
+
+    return terms
+
+def integrated_contour_momentum_terms(params, ds, H):
+    Ly = params["Ly"]
+    t = ds.time / np.timedelta64(1, 's')
+    R = params["R"]
+    contour = depth_following_contour(params, H)
+    cL = contour.dl.sum(dim=("j")).values
+    Ut, Vt =  get_contour_following_velocities(contour, ds)
+    
+    nonlin = -get_vorticityflux_at_contour(contour, ds)*H/cL
+    surfstress = -windforcing(t, params)*Ly/(cL)    
+    Rv = R*Vt
+    bottomstress = -(Rv*contour.dl).sum(dim="j")/cL   # TODO hvorfor H her? Det er noe muffins her
+
+    terms = xr.Dataset(
+        data_vars=dict(
+            surfstress = (["time"], surfstress),
+            nonlin = nonlin,
+            bottomstress = bottomstress
+        ),
+        coords=dict(
+            time = ds.time
+        ),
+    ).squeeze()
+
+    return terms

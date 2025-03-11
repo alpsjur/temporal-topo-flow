@@ -6,15 +6,8 @@ using Printf
 using CUDA 
 using CairoMakie 
 using JSON
-
-# Run on GPU (wow, fast!) if available. Else run on CPU
-if CUDA.functional()
-    architecture = GPU()
-    @info "Running on GPU"
-else
-    architecture = CPU()
-    @info "Running on CPU"
-end
+using NCDatasets
+using Oceananigans.Architectures: on_architecture
 
 
 # Default parameters 
@@ -31,7 +24,7 @@ default_params = Dict(
 
     # Simulation parameters
     "dt" => 2.0,              
-    "tmax" => 64 * 86400.0,      # 64 days in seconds
+    "tmax" => 128 * 86400.0,      # 64 days in seconds
     "outputtime" => 3 * 3600.0,  # 3 hours in seconds
 
     # Forcing parameters
@@ -77,8 +70,21 @@ else
     params = default_params
 end
 
+
+# Check GPU flag in config
+use_gpu = get(params, "GPU", true)  # Default is true if not in config
+
+if use_gpu && CUDA.functional()
+    architecture = GPU()
+    @info "Running on GPU"
+else
+    architecture = CPU()
+    @info "Running on CPU"
+end
+
+
 # Access parameters
-name = params["name"]
+runname = params["name"]
 filepath = params["filepath"]
 dx = params["dx"]
 dy = params["dy"]
@@ -106,11 +112,17 @@ a = params["a"]
 lam = params["lam"]
 noise = params["noise"]
 
+# Parameters based on provided configuration
+omega = 2 * pi / T
+omegan = 2 * pi / Tn
+Nx = Int(Lx / dx)
+Ny = Int(Ly / dy)
+
 # Define bathymetry
 function h_i(x, y, p)
     if x < (p.XC + p.W)                # slope
-        slope = (sech.(pi * (x - p.XC) / p.W).^2) #* (pi*p.DS)/(2*p.W) 
-        corr = p.a * sin.(2 * pi * y / p.lam) #* slope                                 
+        steepness = (sech.(pi * (x - p.XC) / p.W).^2) #* (pi*p.DS)/(2*p.W) 
+        corr = p.a * sin.(2 * pi * y / p.lam) * steepness                                
         h = p.DB + 0.5 * p.DS * (1 + tanh.(pi * (x - p.XC - corr) / p.W))
     else                               # central basin
         h = p.DB + p.DS
@@ -121,11 +133,7 @@ function h_i(x, y, p)
     return h
 end
 
-# Parameters based on provided configuration
-omega = 2 * pi / T
-omegan = 2 * pi / Tn
-Nx = Int(Lx / dx)
-Ny = Int(Ly / dy)
+
 
 # Create grid
 grid = RectilinearGrid(architecture,
@@ -133,50 +141,100 @@ grid = RectilinearGrid(architecture,
                        x=(0, Lx), y=(0, Ly),
                        topology=(Bounded, Periodic, Flat))
 
-# Set up parameters given to forcing function                   
-tx_parameters = (; rho, dn, omegan, R)
-ty_parameters = (; rho, d, omega, R)
 
-# Define forcing functions
-function tx(x, y, t, u, v, h, p)
-    return -p.R * u / h + p.dn * sin(p.omegan * t) / (p.rho * h)
-end
-
-function ty(x, y, t, u, v, h, p)
-    return -p.R * v / h + p.d * sin(p.omega * t) / (p.rho * h)
-end
 
 # Define bathymetry functions
 h_i_func(x, y) = h_i(x, y, (; XC, W, DS, DB, a, lam, sigma, noise))
 b_func(x, y) = -h_i_func(x, y)
 
-# Coriolis
-coriolis = FPlane(f=f)
 
-# # Trying to implement radiative boundary conditions
-# # Define speed of gravity wave
-# c = sqrt(gravitational_acceleration*(DS+DB))
+# === 📡 Load Forcing Data if Available === #
+forcing_enabled = haskey(params, "forcing_file")
+if forcing_enabled
+    forcing_file = params["forcing_file"]
+    @info "Loading forcing file: $forcing_file"
 
-# hflux_parameters = (; c, DS, DB)
-# @inline hflux(y, t, h, p) = (h-(p.DS+p.DB))*p.c
+    ds = Dataset(forcing_file)
 
-# flux_bc = FluxBoundaryCondition(hflux, field_dependencies=:h, parameters=hflux_parameters)
-# h_bcs = FieldBoundaryConditions(FluxBoundaryCondition(nothing), east=flux_bc)
+    # Ensure forcing data is a Float64 array
+    forcing_x_data = convert(Array{Float64, 3}, coalesce.(ds["forcing_x"][:, :, :], NaN))
+    forcing_y_data = convert(Array{Float64, 3}, coalesce.(ds["forcing_y"][:, :, :], NaN))
+    time = convert(Vector{Float64}, coalesce.(ds["time"][:], NaN))
 
-# free_slip_bc = FluxBoundaryCondition(nothing)
-# free_slip_field_bcs = FieldBoundaryConditions(free_slip_bc)
+    close(ds)
 
-# Create model
-model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration,
+    # Move forcing data to GPU if available
+    forcing_x_data = on_architecture(architecture, forcing_x_data)
+    forcing_y_data = on_architecture(architecture, forcing_y_data)
+    time_gpu = on_architecture(architecture, time)
+
+end
+
+# === 🔧 GPU-Safe Interpolation Function === #
+if forcing_enabled
+    @inline function interpolate_forcing(i, j, t, forcing_data, p)
+        # Compute time indices safely using integer division and modulo
+        idx = min(unsafe_trunc(Int32, t / p.fdt) + 1, length(p.time)-1)
+
+        # Performinterpolation in time
+        @inbounds begin
+            t1 = p.time[idx]
+            t2 = p.time[idx+1]
+            f1 = forcing_data[j, i, idx]
+            f2 = forcing_data[j, i, idx+1]
+        end
+        return f1 + (f2 - f1) * (t - t1) / (t2 - t1)
+    end
+
+    tx_parameters = (; rho=params["rho"], dn=params["dn"], omegan=2π / params["Tn"], R=params["R"],
+                     time=time_gpu, fdt=params["outputtime"], forcing_data=forcing_x_data)
+
+    ty_parameters = (; rho=params["rho"], d=params["d"], omega=2π / params["T"], R=params["R"],
+                     time=time_gpu, fdt=params["outputtime"], forcing_data=forcing_y_data)
+
+    @inline function tx(i, j, k, grid, clock, model_fields, p)
+        u = @inbounds model_fields.u[i, j, k]
+        h = @inbounds model_fields.h[i, j, k]
+        return h <= 0 ? 0.0 : -p.R * u / h + p.dn * sin(p.omegan * clock.time) / (p.rho * h) +
+               interpolate_forcing(i, j, clock.time, p.forcing_data, p) / (p.rho * h)
+    end
+
+    @inline function ty(i, j, k, grid, clock, model_fields, p)
+        v = @inbounds model_fields.v[i, j, k]
+        h = @inbounds model_fields.h[i, j, k]
+        return h <= 0 ? 0.0 : -p.R * v / h + p.d * sin(p.omega * clock.time) / (p.rho * h) +
+               interpolate_forcing(i, j, clock.time, p.forcing_data, p) / (p.rho * h)
+    end
+
+    forcing_u = Forcing(tx, discrete_form=true, parameters=tx_parameters)
+    forcing_v = Forcing(ty, discrete_form=true, parameters=ty_parameters)
+else
+    @info "No forcing file specified. Running without forcing from file."
+
+    # Set up parameters
+    tx_parameters = (; rho, dn, omegan, R)
+    ty_parameters = (; rho, d, omega, R)
+
+    function tx(x, y, t, u, v, h, p)
+        return -p.R * u / h + p.dn * sin(p.omegan * t) / (p.rho * h)
+    end
+
+    function ty(x, y, t, u, v, h, p)
+        return -p.R * v / h + p.d * sin(p.omega * t) / (p.rho * h)
+    end
+
+    forcing_u = Forcing(tx, parameters=tx_parameters)
+    forcing_v = Forcing(ty, parameters=ty_parameters)
+end
+
+
+# === 🌀 Define Model === #
+coriolis = FPlane(f=params["f"])
+model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration=params["gravitational_acceleration"],
                           momentum_advection=VectorInvariant(),
                           bathymetry=b_func,
-                        #   boundary_conditions = (u = free_slip_field_bcs, 
-                        #                          v = free_slip_field_bcs, 
-                        #                          h = h_bcs
-                        #                          ),
                           formulation=VectorInvariantFormulation(),
-                          forcing=(u=Forcing(tx, field_dependencies=(:u, :v, :h), parameters=tx_parameters),
-                                   v=Forcing(ty, field_dependencies=(:u, :v, :h), parameters=ty_parameters)))
+                          forcing=(u=forcing_u, v=forcing_v))
 
 # Set initial conditions
 set!(model, h=h_i_func)
@@ -193,7 +251,7 @@ axis = Axis(fig[1, 1],
 depth = model.solution.h   
 hm = heatmap!(axis, depth, colormap=:deep)
 Colorbar(fig[1, 2], hm, label="Depth [m]")
-save(figurepath * name * "-bathymetry.png", fig)
+save(figurepath * runname * "-bathymetry.png", fig)
 
 # Initialize simulation
 simulation = Simulation(model, Δt=dt, stop_time=tmax)
@@ -208,10 +266,18 @@ progress(sim) = @printf(
     maximum(sim.model.solution.v),
     prettytime(1e-9 * (time_ns() - start_time)))
 
-simulation.callbacks[:progress] = Callback(progress, IterationInterval(10days / dt))
+simulation.callbacks[:progress] = Callback(progress, IterationInterval(4days / dt))
 
 # Output
 u, v, h = model.solution
+bath = model.bathymetry
+eta = h + bath
+
+uvh = Field(u*v*h)
+duvhdx = Field(∂x(uvh))
+detady = Field(∂y(eta))
+
+omega_field = Field(∂x(v) - ∂y(u))
 bath = model.bathymetry
 eta = h + bath
 
@@ -233,10 +299,10 @@ fields = Dict("u" => u, "v" => v,
               )
 
 simulation.output_writers[:field_writer] = NetCDFOutputWriter(model, fields, 
-                        filename=filepath * name * ".nc",
+                        filename=filepath * runname * ".nc",
                         schedule=AveragedTimeInterval(outputtime),
                         overwrite_existing=true)
 
-@info "Starting configuration " * name
+@info "Starting configuration " * runname
 
 run!(simulation)
