@@ -3,14 +3,16 @@ import os
 import matplotlib.pyplot as plt
 import xarray as xr
 import seaborn as sns
-from cmcrameri import cm
-from utils import load_config, get_h, default_params, load_dataset, truncate_time_series 
+from cmcrameri import cm as cmc
+import matplotlib.cm as cm
+from utils import load_config, calculate_bathymetry, default_params, load_dataset, truncate_time_series 
 
 # Configure seaborn style
 sns.set_style("whitegrid")
 
 def loop_over_configs(configs, ax):
-    for config in configs:
+    colors = cmc.batlow(np.linspace(0, 1, len(configs)))#cm.tab10(np.linspace(0, 1, len(configs)))
+    for config, color in zip(configs, colors):
         params = load_config(config, default_params.copy())
         ds = load_and_prepare_data(params)
         
@@ -18,8 +20,12 @@ def loop_over_configs(configs, ax):
         x, Vh = preprocess_data(params, ds)
         
         name = params["T"]/(60*60*24)
+        lam = params["lam"]/1e3
         
-        ax.plot(x, Vh, label=name)
+        #label = f"{name:03n} days"
+        label = f"{lam:.1f} km"
+        
+        ax.plot(x, Vh, label=label, color=color)
     return
 
 def load_and_prepare_data(params):
@@ -46,7 +52,9 @@ def preprocess_data(params, ds):
     
     n = int(T * N / outputtime) 
     
-    h = get_h(params)
+    
+    X, Y = np.meshgrid(ds.xC, ds.yF)
+    h = calculate_bathymetry(X,Y, params)
     
     ds_slize = ds.isel(time=slice(-n, -1))
     
@@ -62,10 +70,16 @@ def main():
         
         path = "slope/configs/"
         #configs = os.listdir(path)
-        configs = [f"slope-00{i}.json" for i in [1,2,5,6]]
+        configs = [f"slope-{i:03}.json" for i in [15, 12, 16]]
         configs = [path+config for config in configs]
         loop_over_configs(configs, ax)
-        ax.legend()
+        ax.legend(
+            #title="Forcing period"
+            title="Topography wavelength"
+            )
+        
+        fig.savefig("slope/figures/profiles/Vtransport_profiles_16day_varying_lambda.png")
+        #fig.savefig("slope/figures/profiles/Vtransport_profiles_varying_T.png")
         
         # Optional: Show plots interactively
         plt.show()

@@ -3,7 +3,7 @@ import sys
 import matplotlib.pyplot as plt
 import xarray as xr
 import seaborn as sns
-from cmcrameri import cm
+from cmcrameri import cm as cmc
 from utils import get_h, analytical_circ, load_parameters, load_dataset, \
     truncate_time_series, get_vorticityflux_at_contour, compute_alignment, \
         depth_following_contour, slope_end, get_contour_following_velocities
@@ -14,29 +14,31 @@ sns.set_style("whitegrid")
 
 def setup_plots():
     """Initialize figures and axes for various plots."""
-    figscatter, axscatter = plt.subplots(figsize=(12, 6), ncols=2)
-    axscatter[0].set_xlabel("linear analytical circ [cm s-1]")
-    axscatter[1].set_xlabel("nonlinear analytical circ [cm s-1]")
-    axscatter[0].set_ylabel("numerical circ [cm s-1]")
+    figscatter, axscatter = plt.subplots(figsize=(12, 6), 
+                                         ncols=2)
+    axscatter[0].set_xlabel("linear analytical circ [cm m s-1]")
+    axscatter[1].set_xlabel("nonlinear analytical circ [cm m s-1]")
+    axscatter[0].set_ylabel("numerical circ [cm m s-1]")
     axscatter[0].set_aspect("equal")
     axscatter[1].set_aspect("equal")
 
     figvort, axvort = plt.subplots(figsize=(12, 6), ncols=2)
-    axvort[0].set_ylabel("vorticity contribution [cm s-1]")
-    axvort[0].set_xlabel("numerical circ [cm s-1]")
+    axvort[0].set_ylabel("vorticity contribution [cm m s-1]")
+    axvort[0].set_xlabel("numerical circ [cm m s-1]")
     #axvort[0].set_aspect("equal")
-    axvort[1].set_ylabel("vorticity flux x H/R [cm s-1]")
-    axvort[1].set_xlabel("numerical circ [cm s-1]")
+    axvort[1].set_ylabel("vorticity flux x H/R [cm m s-1]")
+    axvort[1].set_xlabel("numerical circ [cm m s-1]")
     #axvort[1].set_aspect("equal")
 
-    figts, [axts, axalign] = plt.subplots(figsize=(16, 10), nrows=2, sharex=True)
+    #figts, [axts, axalign] = plt.subplots(figsize=(16, 10), nrows=2, sharex=True)
+    figts, axts = plt.subplots(figsize=(16, 10))
     #axts.set_xlabel("time [days]")
-    axts.set_ylabel("circ [cm s-1]")
-    axalign.set_xlabel("time [days]")
-    axalign.set_ylabel("mean alignment []")
+    axts.set_ylabel("circ * H [cm m s-1]")
+    # axalign.set_xlabel("time [days]")
+    # axalign.set_ylabel("mean alignment []")
     
     figalsc, axalsc = plt.subplots(figsize=(6, 6))
-    axalsc.set_xlabel("circ [cm s-1]")
+    axalsc.set_xlabel("circ * H [cm m s-1]")
     axalsc.set_ylabel("alignment []")
     
     # Dummy label
@@ -45,7 +47,9 @@ def setup_plots():
     axts.plot([None, None],[None,None], color="gray", label="linear", ls="--")
 
     return figscatter, axscatter, figvort, axvort, figts, axts, \
-        axalign, figalsc, axalsc
+        figalsc, axalsc
+    # return figscatter, axscatter, figvort, axvort, figts, axts, \
+    #     axalign, figalsc, axalsc
 
 def plot_results(params, ds, xvals, t, t_days, cmap):
     """Generate plots for time series, scatter plots, and contours."""
@@ -60,7 +64,7 @@ def plot_results(params, ds, xvals, t, t_days, cmap):
     ax.set_aspect("equal")
 
     figscatter, axscatter, figvort, axvort, figts, axts, \
-        axalign, figalsc, axalsc = setup_plots()
+        figalsc, axalsc = setup_plots()
     
     T = params["T"]
     outputtime = params["outputtime"]
@@ -96,23 +100,23 @@ def plot_results(params, ds, xvals, t, t_days, cmap):
         analytical_nonlinear = analytical_circ(params, t, cL, H, nonlin) * 1e2
         numerical = -(Vt*contour.dl).sum(dim=("j"))/cL * 1e2  # Convert to cm/s
 
-        axts.plot(t_days[-Tinc:], numerical[-Tinc:], 
+        axts.plot(t_days[:Tinc], numerical[:Tinc]*H, 
                   color=color, 
                   label=f"{int(H)}m depth",
                   zorder = len(xvals)-i,
                   )
-        axts.plot(t_days[-Tinc:], analytical_linear[-Tinc:], 
+        axts.plot(t_days[:Tinc], analytical_linear[:Tinc]*H, 
                   color=color, 
                   linestyle="--",
                   zorder = len(xvals)-i,
                   )
-        axts.plot(t_days[-Tinc:], analytical_nonlinear[-Tinc:], 
+        axts.plot(t_days[:Tinc], analytical_nonlinear[:Tinc]*H, 
                   color=color, 
                   linestyle="-." ,
                   zorder = len(xvals)-i,
                   )
 
-        axscatter[0].scatter(analytical_linear, numerical, 
+        axscatter[0].scatter(analytical_linear*H, numerical*H, 
                              s=16, 
                              alpha=0.7, 
                              marker = "x",
@@ -120,7 +124,7 @@ def plot_results(params, ds, xvals, t, t_days, cmap):
                              zorder = len(xvals)-i,
                              label=f"{int(H)}m depth"
                              )
-        axscatter[1].scatter(analytical_nonlinear, numerical, 
+        axscatter[1].scatter(analytical_nonlinear*H, numerical*H, 
                              s=16, 
                              alpha=0.7, 
                              marker = "x",
@@ -129,7 +133,7 @@ def plot_results(params, ds, xvals, t, t_days, cmap):
                              )
 
         vorticity_contribution = numerical - analytical_linear
-        axvort[0].scatter(numerical, vorticity_contribution, 
+        axvort[0].scatter(numerical*H, vorticity_contribution*H, 
                           s=16, 
                           alpha=0.7, 
                           marker = "x",
@@ -137,7 +141,7 @@ def plot_results(params, ds, xvals, t, t_days, cmap):
                           zorder = len(xvals)-i,
                           label=f"{int(H)}m depth"
                           )
-        axvort[1].scatter(numerical, nonlin * H / R * 1e2, 
+        axvort[1].scatter(numerical*H, nonlin * H * H / R * 1e2, 
                           s=16, 
                           alpha=0.7, 
                           marker = "x",
@@ -145,11 +149,11 @@ def plot_results(params, ds, xvals, t, t_days, cmap):
                           zorder = len(xvals)-i,
                           )
 
-        axalign.plot(t_days[-Tinc:], alignment[-Tinc:], 
-                     color=color, 
-                     zorder = len(xvals)-i,
-                     label=f"{int(H)}m depth"
-                     )
+        # axalign.plot(t_days[-Tinc:], alignment[-Tinc:], 
+        #              color=color, 
+        #              zorder = len(xvals)-i,
+        #              label=f"{int(H)}m depth"
+        #              )
         axalsc.scatter(numerical, alignment, 
                        color=color, 
                        label=f"{int(H)}m depth", 
@@ -182,8 +186,8 @@ def main():
         t = ds.time / np.timedelta64(1, 's')
         t_days = ds.time / np.timedelta64(1, 'D')
 
-        xvals = (10, 30, 40, 50, 80)
-        cmap = cm.batlow
+        xvals = (10, 40, 45, 50, 55, 80)
+        cmap = cmc.batlow
 
         figscatter, figvort, figts, figalsc, fig = plot_results(
             params, ds, xvals, t, t_days, cmap

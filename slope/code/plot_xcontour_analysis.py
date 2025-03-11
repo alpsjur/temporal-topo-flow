@@ -5,7 +5,7 @@ import xarray as xr
 import seaborn as sns
 from cmcrameri import cm
 from utils import depth_following_grid, get_h, analytical_circ, \
-    load_parameters, load_dataset, truncate_time_series 
+    load_parameters, load_dataset, truncate_time_series, calculate_bathymetry
 
 # Configure seaborn style
 sns.set_style("whitegrid")
@@ -33,7 +33,12 @@ def plot_results(params, ds, xvals, t, t_days, cmap):
     n = len(xvals)
     colors = [cmap(1 - i / (n - 1)) for i in range(n)]
 
-    h = xr.DataArray(data=get_h(params), dims=(["yF", "xC"]))
+    X, Y = np.meshgrid(ds.xC, ds.yF)
+    H = calculate_bathymetry(X,Y, params)
+    h = xr.DataArray(data=H, dims=(["yF", "xC"]))
+    
+    vh = ds.v*h
+    
     fig, ax = plt.subplots(figsize=(6, 6))
     ax.pcolormesh(h, cmap="Grays", alpha=0.7)
     ax.set_aspect("equal")
