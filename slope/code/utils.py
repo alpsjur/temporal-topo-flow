@@ -143,13 +143,17 @@ def calculate_xt(y, H, params):
         return solve_xt(y)  # Solve for a single y
     else:
         return np.array([solve_xt(y_val) for y_val in y])  # Solve for each y separately
+    
+    
 
 def compute_contour_vectors(y, H, params):
     """Compute vectors along depth-following contours."""
     xt = calculate_xt(y, H, params)
  
     #xtext = np.concatenate((xt[-1], xt, xt[0]),axis=0)
-    xtext = np.insert(xt, (0, -1), (xt[-1], xt[0]))
+    #xtext = np.insert(xt, (0, -1), (xt[-1], xt[0]))
+    xtext = np.insert(xt, 0, xt[-1])
+    xtext = np.append(xtext, xt[0])
     dxt = np.gradient(xtext)[1:-1]
     #dxt = (xtext[2:]-xtext[1:-1])
 
@@ -246,7 +250,6 @@ def depth_following_grid(params):
 
     Nx = Lx // dx
     Ny = Ly // dy
-    slope_end_idx, _ = slope_end(params)
 
     x = np.arange(0, Lx, dx)
     y = np.arange(0, Ly, dy)
@@ -274,6 +277,43 @@ def depth_following_grid(params):
             j=np.arange(Ny, dtype=np.int32),
         ),
     )
+    
+    
+def hnorm_on_xygrid(params, ds):
+    dx = params["dx"]
+    dy = params["dy"]
+    
+    h = ds.h.isel(time=1).squeeze().values
+    h = np.insert(h, 0, h[-1,:], axis=0)
+    h = np.append(h, h[0,:][None,:], axis=0)
+    
+    
+    dh_dy, dh_dx = np.gradient(h, dy, dx, edge_order=2)
+    
+    dh_dx = dh_dx[1:-1,:]
+    dh_dy = dh_dy[1:-1,:]
+    
+    magnitude = np.sqrt(dh_dy**2 + dh_dx**2) + 1e-12
+    dh_dx /= magnitude
+    dh_dy /= magnitude
+    
+    _, slope_end_idx = slope_end(params)
+    dh_dx[:,slope_end_idx:] = 1
+    dh_dy[:,slope_end_idx:] = 0
+    
+    hnorm = xr.Dataset(
+        data_vars=dict(
+            dhdx = (["yC", "xC"], dh_dx),
+            dhdy = (["yC", "xC"], dh_dy)
+        ),
+        coords=dict(
+            xC = ds.xC,
+            yC = ds.yC
+        )
+    )
+    
+    return hnorm
+    
 
 # ================================
 # Helper Functions and Utilities
@@ -420,7 +460,7 @@ def integrated_zonal_momentum_terms(params, ds, xidx):
     nonlin = -ds.duvhdx.isel(xC=xidx).mean("yC")
     massflux = -(f*hC*uC).mean("yC")
     formstress = -(g*hF*ds.detady.isel(xC=xidx)).mean("yF")
-    bottomstress = -R*ds.v.isel(xC=xidx).mean("yF")                # TODO ganger ikke med H her.
+    bottomstress = -R*ds.v.isel(xC=xidx).mean("yF")                
     
     surfstressi = np.cumsum(surfstress*dt)
     nonlini = (nonlin*dt).cumsum("time")
@@ -454,7 +494,7 @@ def integrated_contour_momentum_terms(params, ds, H):
     nonlin = -get_vorticityflux_at_contour(contour, ds)*H/cL
     surfstress = -windforcing(t, params)*Ly/(cL)    
     Rv = R*Vt
-    bottomstress = -(Rv*contour.dl).sum(dim="j")/cL   # TODO hvorfor H her? Det er noe muffins her
+    bottomstress = -(Rv*contour.dl).sum(dim="j")/cL   
 
     terms = xr.Dataset(
         data_vars=dict(
