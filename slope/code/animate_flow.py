@@ -16,8 +16,8 @@ data = load_dataset(params["filepath"], params["name"])
 data = truncate_time_series(data)
 
 # Extract variables
-x = data['xC'].values
-y = data['yC'].values
+x = data['xC'].values 
+y = data['yC'].values 
 time = data['time'].values
 u = data['u'].values  # Shape: (time, y, x)
 v = data['v'].values  # Shape: (time, y, x)
@@ -26,6 +26,9 @@ h = data['h'].values
 X, Y = np.meshgrid(x, y)
 bath = calculate_bathymetry(X, Y, params)
 eta = h - bath
+
+x /= 1e3
+y /= 1e3
 
 # Interpolate velocities to cell centers
 # u: average over y-axis, ignoring the extra row
@@ -85,24 +88,24 @@ speed_plot = ax1.pcolormesh(x, y, speed_full[0], cmap='plasma',
                             norm=Normalize(vmin=speed_vmin, vmax=speed_vmax))
 quiver = ax1.quiver(x_binned, y_binned, u_norm[0], v_norm[0], scale=30)  
 ax1.set_title("Velocity Field")
-ax1.set_xlabel("x")
-ax1.set_ylabel("y")
+ax1.set_xlabel("x [km]")
+ax1.set_ylabel("y [km]")
 ax1.set_aspect('equal')
 
 # Omega plot
 omega_plot = ax2.imshow(omega[0], extent=[x.min(), x.max(), y.min(), y.max()],
                         origin='lower', aspect='equal', cmap='coolwarm', vmin=omega_vmin, vmax=omega_vmax)
 ax2.set_title("Relative vorticity")
-ax2.set_xlabel("x")
-ax2.set_ylabel("y")
+ax2.set_xlabel("x [km]")
+ax2.set_ylabel("y [km]")
 fig.colorbar(omega_plot, cax=cax2, orientation='horizontal', pad=0.2, label='[s-1]', aspect=20)
 
 # SSH plot
 ssh_plot = ax3.imshow(eta[0], extent=[x.min(), x.max(), y.min(), y.max()],
                       origin='lower', aspect='equal', cmap='cividis', vmin=h_vmin, vmax=h_vmax)
 ax3.set_title("Sea Surface Height (SSH)")
-ax3.set_xlabel("x")
-ax3.set_ylabel("y")
+ax3.set_xlabel("x [km]")
+ax3.set_ylabel("y [km]")
 fig.colorbar(ssh_plot, cax=cax3, orientation='horizontal', pad=0.2, label='[m]', aspect=20)
 
 # Add colorbar for speed
@@ -126,5 +129,5 @@ def update(frame):
 anim = FuncAnimation(fig, update, frames=len(time), interval=200)
 
 # Save or show the animation
-anim.save(f"slope/animations/{params['name']}.mp4", writer="ffmpeg", fps=10)
+anim.save(f"slope/animations/flow/{params['name']}.mp4", writer="ffmpeg", fps=10)
 plt.show()

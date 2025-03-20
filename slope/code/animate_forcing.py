@@ -12,16 +12,16 @@ config = params["name"]
 ds = xr.open_dataset(forcingfile)
 
 # Extract variables
-x = ds.x.values
-y = ds.y.values
+x = ds.x.values/1e3
+y = ds.y.values/1e3
 time = ds.time.values
 tau_x = ds.forcing_x.values
 tau_y = ds.forcing_y.values
 
 # Subsampling for clarity
 step = 4  # Plot every 4th vector
-x_sub = x[::step]/1e2
-y_sub = y[::step]/1e2
+x_sub = x[::step]
+y_sub = y[::step]
 X, Y = np.meshgrid(x_sub, y_sub, indexing="ij")
 
 # Compute global max magnitude for consistent scaling
