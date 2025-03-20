@@ -55,9 +55,7 @@ y_binned = y[:bins_y * arrow_density].reshape(bins_y, arrow_density).mean(axis=1
 
 # Compute speed for scaling arrows
 speed_binned = np.sqrt(u_binned**2 + v_binned**2)
-print(np.max(speed_binned))
 speed_scale = np.max([round(np.max(speed_binned)*1e2),1])
-print(speed_scale)
 scale_factor = 1 / (np.max(speed_binned) + 1e-10)  # Scale by max speed
 
 # Adjust arrow length by speed
