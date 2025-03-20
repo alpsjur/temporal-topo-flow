@@ -20,4 +20,9 @@
 | 016 | 16 days period, 90 km wavelength |
 | 017 | 32 days period, 22.5 km wavelength |
 | 018 | 32 days period, 90 km wavelength |
+| 100 | Stocastic winds, 5 days, no bumps |
+| 101 | Stocastic winds, 128 days, no bumps |
+| 102 | Stocastic winds, repeated to integrate to 0, tapering at boundaries, no bumps |
+| 200 | Sinusodal winds, no bumps, 4 days period |
+| 201 | Sinusodal winds, no bumps, 32 days period |
 | 999 | Short simulaiton of 1 day for parameter testing |

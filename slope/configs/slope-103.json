@@ -1,0 +1,12 @@
+{
+    "name": "slope-103",
+    "a": 0,
+    "d" : 0,
+    "dt" : 4.0,
+    "GPU": true,
+    "Lx" : 90000,
+    "Ly" : 90000,
+    "T" : 44236800.0,
+    "tmax" : 44236800.0,
+    "forcing_file": "slope/input/slope-103_forcing.nc" 
+}

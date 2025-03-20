@@ -195,15 +195,13 @@ if forcing_enabled
     @inline function tx(i, j, k, grid, clock, model_fields, p)
         u = @inbounds model_fields.u[i, j, k]
         h = @inbounds model_fields.h[i, j, k]
-        return h <= 0 ? 0.0 : -p.R * u / h + p.dn * sin(p.omegan * clock.time) / (p.rho * h) +
-               interpolate_forcing(i, j, clock.time, p.forcing_data, p) / (p.rho * h)
+        return h <= 0 ? 0.0 : -p.R * u / h + interpolate_forcing(i, j, clock.time, p.forcing_data, p) / (p.rho * h)
     end
 
     @inline function ty(i, j, k, grid, clock, model_fields, p)
         v = @inbounds model_fields.v[i, j, k]
         h = @inbounds model_fields.h[i, j, k]
-        return h <= 0 ? 0.0 : -p.R * v / h + p.d * sin(p.omega * clock.time) / (p.rho * h) +
-               interpolate_forcing(i, j, clock.time, p.forcing_data, p) / (p.rho * h)
+        return h <= 0 ? 0.0 : -p.R * v / h + interpolate_forcing(i, j, clock.time, p.forcing_data, p) / (p.rho * h)
     end
 
     forcing_u = Forcing(tx, discrete_form=true, parameters=tx_parameters)
@@ -223,8 +221,8 @@ else
         return -p.R * v / h + p.d * sin(p.omega * t) / (p.rho * h)
     end
 
-    forcing_u = Forcing(tx, parameters=tx_parameters)
-    forcing_v = Forcing(ty, parameters=ty_parameters)
+    forcing_u = Forcing(tx, field_dependencies=(:u, :v, :h), parameters=tx_parameters)
+    forcing_v = Forcing(ty, field_dependencies=(:u, :v, :h), parameters=ty_parameters)
 end
 
 

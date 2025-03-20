@@ -1,0 +1,7 @@
+{
+    "name": "slope-200",
+    "a": 0,
+    "dt" : 4.0,
+    "GPU": true,
+    "forcing_file": "slope/input/slope-200_forcing.nc" 
+}
