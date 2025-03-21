@@ -153,7 +153,7 @@ def compute_contour_vectors(y, H, params):
     #xtext = np.concatenate((xt[-1], xt, xt[0]),axis=0)
     #xtext = np.insert(xt, (0, -1), (xt[-1], xt[0]))
     xtext = np.insert(xt, 0, xt[-1])
-    xtext = np.append(xtext, xt[0])
+    xtext = np.append(xtext, xt[1])
     dxt = np.gradient(xtext)[1:-1]
     #dxt = (xtext[2:]-xtext[1:-1])
 
@@ -285,7 +285,7 @@ def hnorm_on_xygrid(params, ds):
     
     h = ds.h.isel(time=1).squeeze().values
     h = np.insert(h, 0, h[-1,:], axis=0)
-    h = np.append(h, h[0,:][None,:], axis=0)
+    h = np.append(h, h[1,:][None,:], axis=0)
     
     
     dh_dy, dh_dx = np.gradient(h, dy, dx, edge_order=2)
@@ -339,6 +339,14 @@ def get_contour_following_velocities(contour, ds):
     Ut = ut * contour.dtdy - vt * contour.dtdx
     Vt = ut * contour.dtdx + vt * contour.dtdy
     return Ut, Vt
+
+def get_contour_following_tau(contour, ds):
+    """Calculate contour-following stress."""
+    tauxt = ds.forcing_x.interp(x=contour.x, y=contour.y)
+    tauyt = ds.forcing_y.interp(x=contour.x, y=contour.y)
+    Tauxt = tauxt * contour.dtdy - tauyt * contour.dtdx
+    Tauyt = tauxt * contour.dtdx + tauyt * contour.dtdy
+    return Tauxt, Tauyt
 
 def get_vorticityflux_at_contour(contour, ds):
     """Calculate vorticity flux at the contour."""
@@ -438,7 +446,6 @@ def integrated_zonal_momentum_terms(params, ds, xidx):
     f = params["f"]
     R = params["R"]
     g = params["gravitational_acceleration"]
-    dt = params["outputtime"]
 
     t = ds.time / np.timedelta64(1, 's')
     uF = ds.u 
@@ -447,11 +454,6 @@ def integrated_zonal_momentum_terms(params, ds, xidx):
     x = ds.xC.isel(xC=xidx).values
     yC = ds.yC.values
     yF = ds.yF.values
-    
-    # hC = ds.h.isel(xC = xidx)
-    # hC_ext = xr.concat([hC, hC.isel(yC=0)], dim="yC")
-    # hF = 0.5 * (hC_ext.isel(yC=slice(0, -1)) + hC_ext.isel(yC=slice(1, None)))
-    # hF = hF.rename({'yC': 'yF'}).assign_coords(yF=yF)
     
     hC = calculate_bathymetry(x, yC, params)
     hF = calculate_bathymetry(x, yF, params)
@@ -462,12 +464,6 @@ def integrated_zonal_momentum_terms(params, ds, xidx):
     formstress = -(g*hF*ds.detady.isel(xC=xidx)).mean("yF")
     bottomstress = -R*ds.v.isel(xC=xidx).mean("yF")                
     
-    surfstressi = np.cumsum(surfstress*dt)
-    nonlini = (nonlin*dt).cumsum("time")
-    massfluxi = (massflux*dt).cumsum("time")
-    formstressi = (formstress*dt).cumsum("time")
-    bottomstressi = (bottomstress*dt).cumsum("time")
-
     terms = xr.Dataset(
         data_vars=dict(
             surfstress = (["time"], surfstress),
@@ -480,6 +476,13 @@ def integrated_zonal_momentum_terms(params, ds, xidx):
             time = ds.time
         ),
     ).squeeze()
+    
+    # update forcing to forcing prescribed from file if file is defined
+    if "forcing_file" in params:
+
+        tau = xr.open_dataset(params["forcing_file"]).squeeze()
+        terms["surfstress"][1:] = tau.forcing_y.isel(x=xidx).mean("y").values/params["rho"]
+
 
     return terms
 
@@ -506,5 +509,11 @@ def integrated_contour_momentum_terms(params, ds, H):
             time = ds.time
         ),
     ).squeeze()
+    
+    # update forcing to forcing prescribed from file if file is defined
+    if "forcing_file" in params:
+        tauds = xr.open_dataset(params["forcing_file"]).squeeze()
+        taui, tauj = get_contour_following_tau(contour, tauds)
+        terms["surfstress"][1:] = (tauj*contour.dl).sum(dim="j").values/(cL*params["rho"])
 
     return terms

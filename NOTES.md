@@ -16,14 +16,21 @@ Spørsmål: Hvordan kommer de frem til et uttrykk for form drag som funksjon av 
   - [ ] Arealintegral for H-kontur: må også inkludere forn-drag-integranden.
   - [ ] Stokastisk vind: hvorfor får jeg en veldig tydelig mode for y-komponenten, men ikke x-komponenten? Noe å undersøke. 
   - [ ] Hvordan kan vi knytte dette studiet til Arktis? Kan vi trekke in observasjoner på noen måte?
-  - [ ] Kjøringer med konstant pådrag, baseline. 
-    - Kan vi se på differansen mellom disse, og sette det som tak for residualstrømmen?
+  - [x] Kjøringer med konstant pådrag, baseline. 
+    - [ ] Kan vi se på differansen mellom disse, og sette det som tak for residualstrømmen?
   - [ ] Plotte vorticity-flux som funksjon av sirkulasjon.
+  - [x] Momentum terms analysis as .py file.
+  - [ ] Plotte PV for å se hva som skjer ved grensene
+  - [ ] Stokastisk vind + bumps 
+  - [ ] Spekter av bumps
+  - [ ] RYDDE KODE
+  - [ ] Rydde opp i kjøringer og kjøre på nytt...
 
 ### Leselist
   - [x] Marshall - Climate response functions 
     - Kanskje dette er interesant for Rafael?
   - [ ] "Mean flow generation along a sloping region  in a rotating homogeneous fluid"
+  - [ ] Bai et al, for inspo
 
 
 ### Ting å ta opp
