@@ -19,12 +19,12 @@ default_params = Dict(
     # Grid parameters
     "dx" => 1e3,             
     "dy" => 1e3,
-    "Lx" => 120e3,           
+    "Lx" => 90e3,           
     "Ly" => 90e3,
 
     # Simulation parameters
-    "dt" => 2.0,              
-    "tmax" => 128 * 86400.0,      # 64 days in seconds
+    "dt" => 4.0,              
+    "tmax" => 128 * 86400.0,      # 128 days in seconds
     "outputtime" => 3 * 3600.0,  # 3 hours in seconds
 
     # Forcing parameters
@@ -149,8 +149,8 @@ b_func(x, y) = -h_i_func(x, y)
 
 
 # === 📡 Load Forcing Data if Available === #
-forcing_enabled = haskey(params, "forcing_file")
-if forcing_enabled
+forcing_from_file = haskey(params, "forcing_file")
+if forcing_from_file
     forcing_file = params["forcing_file"]
     @info "Loading forcing file: $forcing_file"
 
@@ -171,7 +171,7 @@ if forcing_enabled
 end
 
 # === 🔧 GPU-Safe Interpolation Function === #
-if forcing_enabled
+if forcing_from_file
     @inline function interpolate_forcing(i, j, t, forcing_data, p)
         # Compute time indices safely using integer division and modulo
         idx = min(unsafe_trunc(Int32, t / p.fdt) + 1, length(p.time)-1)
@@ -227,15 +227,33 @@ end
 
 
 # === 🌀 Define Model === #
+# Set initial conditions
+h_from_file = haskey(params, "bathymetry_file")
+if h_from_file
+    h_file = params["bathymetry_file"]
+    @info "Loading bathymetry file: $h_file"
+
+    ds = Dataset(h_file)
+
+    # Ensure forcing data is a Float64 array
+    h_data = convert(Array{Float64, 2}, coalesce.(ds["h"][:, :], NaN))
+
+    bathymetry = - h_data
+    h_initial = h_data
+else    
+    @info "No bathymetry file specified."
+    bathymetry = b_func
+    h_initial = h_i_func
+end
+
+
 coriolis = FPlane(f=params["f"])
 model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration=params["gravitational_acceleration"],
                           momentum_advection=VectorInvariant(),
-                          bathymetry=b_func,
+                          bathymetry=bathymetry,
                           formulation=VectorInvariantFormulation(),
                           forcing=(u=forcing_u, v=forcing_v))
-
-# Set initial conditions
-set!(model, h=h_i_func)
+set!(model, h=h_initial)
 
 # Plot bathymetry
 figurepath = "slope/figures/bathymetry/"
@@ -257,14 +275,14 @@ simulation = Simulation(model, Δt=dt, stop_time=tmax)
 # Logging simulation progress
 start_time = time_ns()
 progress(sim) = @printf(
-    "i: %10d, sim time: % 12s, min(v): %4.3f ms⁻¹, max(v): %4.3f ms⁻¹, wall time: %12s\n",
+    "i: %6d, sim time: % 12s, wall time: %12s\n",
     sim.model.clock.iteration,
     prettytime(sim.model.clock.time),
-    minimum(sim.model.solution.v),
-    maximum(sim.model.solution.v),
+    #minimum(sim.model.solution.v),
+    #maximum(sim.model.solution.v),
     prettytime(1e-9 * (time_ns() - start_time)))
 
-simulation.callbacks[:progress] = Callback(progress, IterationInterval(4days / dt))
+simulation.callbacks[:progress] = Callback(progress, IterationInterval(20days / dt))
 
 # Output
 u, v, h = model.solution
@@ -272,28 +290,32 @@ bath = model.bathymetry
 eta = h + bath
 
 uvh = Field(u*v*h)
+uuh = Field(u*u*h)        # Do I need these?
+vvh = Field(v*v*h)        #
 duvhdx = Field(∂x(uvh))
+duvhdy = Field(∂y(uvh))   #
+duuhdx = Field(∂x(uuh))   #
+duuhdy = Field(∂y(uuh))   #
+dvvhdx = Field(∂x(vvh))   #
+dvvhdy = Field(∂y(vvh))   #
+
+detadx = Field(∂x(eta))   #
 detady = Field(∂y(eta))
 
 omega_field = Field(∂x(v) - ∂y(u))
-bath = model.bathymetry
-eta = h + bath
+omegau = Field(omega_field * u)
+omegav = Field(omega_field * v)
 
-uvh = Field(u*v*h)
-duvhdx = Field(∂x(uvh))
-detady = Field(∂y(eta))
-
-omega_field = Field(∂x(v) - ∂y(u))
-omega_u = Field(omega_field * u)
-omega_v = Field(omega_field * v)
-
-divomega_flux = Field(∂x(omega_u) + ∂y(omega_v))
+#divomega_flux = Field(∂x(omega_u) + ∂y(omega_v))
 
 fields = Dict("u" => u, "v" => v, 
               "h" => h, "omega" => omega_field,
-              "omegau" => omega_u, "omegav" => omega_v,
-              "divomegaflux" => divomega_flux,
-              "duvhdx" => duvhdx, "detady" => detady
+              "omegau" => omegau, "omegav" => omegav,
+              #"divomegaflux" => divomega_flux,
+              "duvhdx" => duvhdx, "duvhdy" => duvhdy, 
+              "duuhdx" => duuhdx, "duuhdy" => duuhdy, 
+              "dvvhdx" => dvvhdx, "dvvhdy" => dvvhdy, 
+              "detadx" => detadx, "detady" => detady
               )
 
 simulation.output_writers[:field_writer] = NetCDFOutputWriter(model, fields, 

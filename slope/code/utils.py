@@ -19,11 +19,11 @@ default_params = {
     # Grid configuration
     "dx": 1e3,
     "dy": 1e3,
-    "Lx": 120e3,
+    "Lx": 90e3,
     "Ly": 90e3,
 
     # Simulation settings
-    "dt": 2.0,
+    "dt": 4.0,
     "tmax": 128 * 86400.0,
     "outputtime": 3 * 3600.0,
 
@@ -113,8 +113,9 @@ def get_h(params):
 # Depth-Following Contour Calculations
 # ================================
 
-def calculate_xt(y, H, params):
-    """Compute x-coordinates along a contour based on depth.
+def calculate_analytical_xt(y, H, params):
+    """Compute x-coordinates along a contour based on depth
+    by inplicitly solving analytical function for bathymetry.
     
     If y is a vector, solve for each element separately.
     """
@@ -144,19 +145,47 @@ def calculate_xt(y, H, params):
     else:
         return np.array([solve_xt(y_val) for y_val in y])  # Solve for each y separately
     
+def calculate_numerical_xt(y, H, params):
+    """Compute x-coordinates along a contour based on depth,
+    using skimage to find points along the contour.
+    """
+    from skimage.measure import find_contours
     
+    ds = xr.open_dataset(params["bathymetry_file"])
+    
+    contours = find_contours(ds.h.values, level=H)
+    contour = contours[0]
+
+    # reverse first dimension
+    contour = contour[::-1,:]
+    contour
+
+    jdx = np.arange(0,90,1)
+
+    idx = []
+    for row in contour:
+        if row[0] in jdx:
+            idx.append(row[1])
+    idx = np.array(idx)
+    
+    dx = params["dx"]
+    xt = idx*dx 
+    
+    return xt
+
+def calculate_xt(yt, H, params):
+    if "bathymetry_file" in params:
+        return calculate_numerical_xt(y, H, params)
+    else:
+        return calculate_analytical_xt(y, H, params)
 
 def compute_contour_vectors(y, H, params):
     """Compute vectors along depth-following contours."""
     xt = calculate_xt(y, H, params)
  
-    #xtext = np.concatenate((xt[-1], xt, xt[0]),axis=0)
-    #xtext = np.insert(xt, (0, -1), (xt[-1], xt[0]))
     xtext = np.insert(xt, 0, xt[-1])
     xtext = np.append(xtext, xt[1])
     dxt = np.gradient(xtext)[1:-1]
-    #dxt = (xtext[2:]-xtext[1:-1])
-
 
     # Normalize vectors
     dyt = np.ones_like(dxt)*params["dy"]
@@ -490,6 +519,7 @@ def integrated_contour_momentum_terms(params, ds, H):
     Ly = params["Ly"]
     t = ds.time / np.timedelta64(1, 's')
     R = params["R"]
+    f = params["f"]
     contour = depth_following_contour(params, H)
     cL = contour.dl.sum(dim=("j")).values
     Ut, Vt =  get_contour_following_velocities(contour, ds)
@@ -498,12 +528,14 @@ def integrated_contour_momentum_terms(params, ds, H):
     surfstress = -windforcing(t, params)*Ly/(cL)    
     Rv = R*Vt
     bottomstress = -(Rv*contour.dl).sum(dim="j")/cL   
+    massflux = -(f*Ut*contour.dl).sum(dim="j")*H/cL
 
     terms = xr.Dataset(
         data_vars=dict(
             surfstress = (["time"], surfstress),
             nonlin = nonlin,
-            bottomstress = bottomstress
+            bottomstress = bottomstress,
+            #massflux = massflux
         ),
         coords=dict(
             time = ds.time

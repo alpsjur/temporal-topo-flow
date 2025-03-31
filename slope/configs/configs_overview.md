@@ -3,26 +3,31 @@
 | Name| Comment      |
 | ----| ----------   |
 | 001 |  Default|
-| 002 | 64 days period |
-| 003 | Retrograde only |
-| 004 | Prograde only |
-| 005 | Reduced friction |
-| 006 | 256 days forcing period |
-| 007 | No corrigations |
-| 008 | No corrigations, 64 days period |
-| 009 | 10% default forcing, 64 days period |
-| 010 | x2 corrigation amplitude |
-| 011 | 8 days period |
-| 012 | 16 days period |
-| 013 | 32 days period |
-| 014 | 128 days period |
+| 002 |  8 days forcing period|
+| 003 |  16 days forcing period|
+| 004 |  32 days forcing period|
+| 005 |  64 days forcing period|
+| 006 |  128 days forcing period|
+| 007 |  256 days forcing period|
+| 010 |  No corrigations |
+| 011 |  No corrigations, 64 days period |
 | 015 | 16 days period, 22.5 km wavelength |
 | 016 | 16 days period, 90 km wavelength |
 | 017 | 32 days period, 22.5 km wavelength |
 | 018 | 32 days period, 90 km wavelength |
+| 050 | Constant prograde winds |
+| 051 | Constant retrograde winds |
 | 100 | Stocastic winds, 5 days, no bumps |
 | 101 | Stocastic winds, 128 days, no bumps |
-| 102 | Stocastic winds, repeated to integrate to 0, tapering at boundaries, no bumps |
+| 102 | Stocastic winds, repeated to integrate to 0, no bumps |
+| 103 | Stocastic winds, 128 days, with bumps |
+| 104 | Stocastic winds, repeated to integrate to 0, with bumps |
 | 200 | Sinusodal winds, no bumps, 4 days period |
 | 201 | Sinusodal winds, no bumps, 32 days period |
-| 999 | Short simulaiton of 1 day for parameter testing |
+| 202 | Sinusodal winds, with bumps, 4 days period |
+| 203 | Sinusodal winds, with bumps, 32 days period |
+| 300 | Specter of bumps |
+| 301 | Specter of bumps, 32 days forcing period |
+
+
+

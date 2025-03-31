@@ -1,0 +1,7 @@
+{
+    "name": "slope-300",
+    "bathymetry_file": "slope/input/slope-300_bathymetry.nc",
+    "alist": [10, 25, 30, 49, 8, 15, 30],
+    "lamlist": [11250, 22500, 22500, 45000, 45000, 90000, 90000],
+    "phaselist": [500, 0, 35000, 22000, 3500, 16000, 5100]
+}
