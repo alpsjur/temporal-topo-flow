@@ -173,7 +173,7 @@ def calculate_numerical_xt(y, H, params):
     
     return xt
 
-def calculate_xt(yt, H, params):
+def calculate_xt(y, H, params):
     if "bathymetry_file" in params:
         return calculate_numerical_xt(y, H, params)
     else:
