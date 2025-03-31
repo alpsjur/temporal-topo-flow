@@ -124,8 +124,8 @@ m_reshaped = m[:, :, None, None]  # Shape: (num_modes, nt, 1, 1)
 # W_x_modes -= np.mean(W_x_modes, axis=2, keepdims=True)  
 
 # Compute wind field by summing over modes
-u = np.mean(m_reshaped * W_x_modes[:, None, :, :], axis=0) * 1e4  # Shape: (nt, nx, ny)
-v = np.mean(m_reshaped * W_y_modes[:, None, :, :], axis=0) * 1e4
+u = np.mean(m_reshaped * W_x_modes[:, None, :, :], axis=0) * 2e3  # Shape: (nt, nx, ny)
+v = np.mean(m_reshaped * W_y_modes[:, None, :, :], axis=0) * 2e3
 
 u = u*F 
 v = v*F

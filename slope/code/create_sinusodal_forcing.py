@@ -58,7 +58,7 @@ def compute_time_varying_tangential_velocity(dh_dx, dh_dy, time, T, d):
     #magnitude[magnitude == 0] = 1e-12  # Avoid division by zero
 
     # Compute unit tangential velocity (constant in space)
-    u_tan = -dh_dy / dh_dx#magnitude
+    u_tan = dh_dy / dh_dx#magnitude
     v_tan = dh_dx / dh_dx#magnitude
 
     # Apply sinusoidal variation in time
