@@ -4,6 +4,5 @@
     "d" : 0,
     "dt" : 4.0,
     "tmax" : 432000.0,
-    "GPU": true,
     "forcing_file": "slope/input/slope-100_forcing.nc" 
 }
