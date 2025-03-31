@@ -12,19 +12,21 @@ Spørsmål: Hvordan kommer de frem til et uttrykk for form drag som funksjon av 
 
 ### TODO 
   - [x] Gausisk pådrag, slik som i masteroppgaven.
-  - [ ] Integrere momentumlikning både i tid og rom
+  - [x] Integrere momentumlikning både i tid og rom
   - [ ] Arealintegral for H-kontur: må også inkludere forn-drag-integranden.
   - [ ] Stokastisk vind: hvorfor får jeg en veldig tydelig mode for y-komponenten, men ikke x-komponenten? Noe å undersøke. 
   - [ ] Hvordan kan vi knytte dette studiet til Arktis? Kan vi trekke in observasjoner på noen måte?
   - [x] Kjøringer med konstant pådrag, baseline. 
     - [ ] Kan vi se på differansen mellom disse, og sette det som tak for residualstrømmen?
-  - [ ] Plotte vorticity-flux som funksjon av sirkulasjon.
+  - [x] Plotte vorticity-flux som funksjon av sirkulasjon.
   - [x] Momentum terms analysis as .py file.
-  - [ ] Plotte PV for å se hva som skjer ved grensene
-  - [ ] Stokastisk vind + bumps 
+  - [x] Plotte PV for å se hva som skjer ved grensene
+  - [x] Stokastisk vind + bumps 
   - [ ] Spekter av bumps
   - [ ] RYDDE KODE
-  - [ ] Rydde opp i kjøringer og kjøre på nytt...
+  - [x] Rydde opp i kjøringer og kjøre på nytt...
+  - [ ] Regne flux av f ut ifra endring i eta, mer stabilt?
+  - [ ] Rename massflux -> fflux? Maybe just write it is zero, and not include it in the plots?
 
 ### Leselist
   - [x] Marshall - Climate response functions 

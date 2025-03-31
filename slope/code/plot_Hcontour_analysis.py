@@ -24,10 +24,10 @@ def setup_plots():
 
     figvort, axvort = plt.subplots(figsize=(12, 6), ncols=2)
     axvort[0].set_ylabel("vorticity contribution [cm m s-1]")
-    axvort[0].set_xlabel("numerical circ [cm m s-1]")
+    axvort[0].set_xlabel("linear circ [cm m s-1]")
     #axvort[0].set_aspect("equal")
     axvort[1].set_ylabel("vorticity flux x H/R [cm m s-1]")
-    axvort[1].set_xlabel("numerical circ [cm m s-1]")
+    axvort[1].set_xlabel("linear circ [cm m s-1]")
     #axvort[1].set_aspect("equal")
 
     #figts, [axts, axalign] = plt.subplots(figsize=(16, 10), nrows=2, sharex=True)
@@ -133,7 +133,8 @@ def plot_results(params, ds, xvals, t, t_days, cmap):
                              )
 
         vorticity_contribution = numerical - analytical_linear
-        axvort[0].scatter(numerical*H, vorticity_contribution*H, 
+        axvort[0].scatter(#numerical*H, vorticity_contribution*H, 
+                          analytical_linear*H, vorticity_contribution*H,
                           s=16, 
                           alpha=0.7, 
                           marker = "x",
@@ -141,7 +142,8 @@ def plot_results(params, ds, xvals, t, t_days, cmap):
                           zorder = len(xvals)-i,
                           label=f"{int(H)}m depth"
                           )
-        axvort[1].scatter(numerical*H, nonlin * H * H / R * 1e2, 
+        axvort[1].scatter(#numerical*H, nonlin * H * H / R * 1e2, 
+                          analytical_linear*H, nonlin * H * H / R * 1e2,
                           s=16, 
                           alpha=0.7, 
                           marker = "x",

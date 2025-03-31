@@ -19,25 +19,27 @@ DB = params["DB"]
 DS = params["DS"]
 
 xidx = 45
-terms = integrated_zonal_momentum_terms(params, ds, xidx)
+results = integrated_zonal_momentum_terms(params, ds, xidx)
 
 
 fig, [ax, ax2] = plt.subplots(figsize=(10,10), nrows=2, sharex=True)
-ax.set_title(f"Momentum terms and circulation integrated along depth = \
+ax.set_title(f"Momentum terms and circulation integrated along x = \
     {xidx*params["dx"]/1e3:.0f} km")
 axes_styling(ax)
 axes_styling(ax2)
 ax.axhline(0, color="gray", ls="--")
 ax2.axhline(0, color="gray", ls="--")
 
-terms["sum"] = terms["surfstress"] + terms["nonlin"] + terms["bottomstress"] + terms["formstress"] 
-tday = terms.time / np.timedelta64(1,"D")
+results["sum"] = results["surfstress"] + results["nonlin"] + results["bottomstress"] + results["formstress"] 
+tday = results.time / np.timedelta64(1,"D")
 
-colors = cmc.batlow(np.linspace(0, 1, 5))
+
+terms = ["sum", "surfstress", "nonlin", "bottomstress", "formstress"]
+colors = cmc.batlow(np.linspace(0, 1, len(terms)))
 for term, color in zip(terms, colors):
-    ax.plot(tday, -terms[term], label=term, color=color)
+    ax.plot(tday, -results[term], label=term, color=color)
     
-circ_est = -(terms["sum"]*params["outputtime"]).cumsum("time")
+circ_est = -(results["sum"]*params["outputtime"]).cumsum("time")
 circ_diag = -(ds.v.isel(xC=xidx)*calculate_bathymetry(ds.xC.isel(xC=xidx), ds.yF, params)).mean("yF")
 
 ax2.plot(tday, circ_est, 
@@ -92,7 +94,7 @@ axd = fig.subplot_mosaic(
 Td = params["T"]*sec2days   
 tmaxd = params["tmax"]*sec2days 
 vmax = np.max([np.abs(results[term]).quantile(0.98) for term in results])
-idh = np.arange(len(idxs))
+#idh = np.arange(len(idxs))
 
 terms = ["surfstress", "nonlin", "bottomstress", "formstress"]
 axes = [axd[f"{i}"] for i in range(4)]
@@ -159,13 +161,13 @@ Tn = int(params["T"]/params["outputtime"])
 circT = circ.isel(time=slice(-Tn, None))
 resultsT = results.isel(time=slice(-Tn, None))
 vmax = np.max(np.abs(circT))
-axd["circ"].pcolormesh(idh, tday[-Tn:], circT.T, 
+axd["circ"].pcolormesh(idxs, tday[-Tn:], circT.T, 
                   vmin=-vmax, vmax=vmax, 
                   cmap=cmc.vik)
 
 
 
-terms = ["sum", "surfstress", "nonlin", "bottomstress"]
+terms = ["sum", "surfstress", "nonlin", "bottomstress","formstress"]
 i = 1
 for term, color in zip(terms, colors):
     
@@ -175,7 +177,7 @@ for term, color in zip(terms, colors):
     txmean = xmean.mean("time")
     
     
-    axd["tmean"].plot(idh, tmean, label=term, color=color)
+    axd["tmean"].plot(idxs, tmean, label=term, color=color)
     axd["xmean"].plot(xmean[-Tn:], tday[-Tn:], label=term, color=color)
     axd["txmean"].scatter(i, txmean, label=term, color=color)
     i += 1
@@ -188,7 +190,7 @@ axd["tmean"].set_ylabel("m2 s-2")
 axd["xmean"].set_xlabel("m2 s-2")
   
     
-axd["circ"].legend(loc='upper center', 
+axd["tmean"].legend(loc='upper left', 
                     frameon=False,
                     ncols=3,
                     bbox_to_anchor=(0, 1.5)

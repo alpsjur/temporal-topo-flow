@@ -23,9 +23,11 @@ def loop_over_configs(configs, ax):
         lam = params["lam"]/1e3
         
         #label = f"{name:03n} days"
-        label = f"{lam:.1f} km"
+        #label = f"{lam:.1f} km"
+        label = params["name"]
         
         ax.plot(x, Vh, label=label, color=color)
+        ax.axhline(np.mean(Vh), color=color, ls="--")
     return
 
 def load_and_prepare_data(params):
@@ -51,15 +53,17 @@ def preprocess_data(params, ds):
     N = 1              # number of forcing periods to average over
     
     n = int(T * N / outputtime) 
-    
-    
-    X, Y = np.meshgrid(ds.xC, ds.yF)
-    h = calculate_bathymetry(X,Y, params)
+    #X, Y = np.meshgrid(ds.xC, ds.yF)
+    #h = calculate_bathymetry(X,Y, params)
     
     ds_slize = ds.isel(time=slice(-n, -1))
     
-    V = ds_slize.v.mean("time")
-    Vh = (V*h).mean("yF")
+    V = ds_slize.v#.mean("time")
+    h = ds_slize.h.values
+    h = np.insert(h, 0, h[:,-1,:], axis=1)
+    h = 0.5*(h[:,1:,:]+h[:,:-1,:])
+    
+    Vh = (V*h).mean(("yF", "time"))
     
     return x, Vh 
 
@@ -70,16 +74,18 @@ def main():
         
         path = "slope/configs/"
         #configs = os.listdir(path)
-        configs = [f"slope-{i:03}.json" for i in [15, 12, 16]]
+        configs = [f"slope-{i:03}.json" for i in [201, 203]]
         configs = [path+config for config in configs]
         loop_over_configs(configs, ax)
         ax.legend(
             #title="Forcing period"
-            title="Topography wavelength"
+            #title="Topography wavelength"
+            title="config"
             )
         
-        fig.savefig("slope/figures/profiles/Vtransport_profiles_16day_varying_lambda.png")
+        #fig.savefig("slope/figures/profiles/Vtransport_profiles_16day_varying_lambda.png")
         #fig.savefig("slope/figures/profiles/Vtransport_profiles_varying_T.png")
+        fig.savefig("slope/figures/profiles/Vtransport_profiles_sinusodal.png")
         
         # Optional: Show plots interactively
         plt.show()

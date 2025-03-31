@@ -63,7 +63,7 @@ u_scaled = u_binned * scale_factor
 v_scaled = v_binned * scale_factor
 
 # Create figure
-fig, ax = plt.subplots(figsize=(10, 6))
+fig, ax = plt.subplots(figsize=(8, 8))
 
 # Plot bathymetry
 cmap = cmocean.cm.deep

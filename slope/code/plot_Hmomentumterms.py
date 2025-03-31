@@ -33,10 +33,10 @@ axes_styling(ax2)
 ax.axhline(0, color="gray", ls="--")
 ax2.axhline(0, color="gray", ls="--")
 
-terms["sum"] = terms["surfstress"] + terms["nonlin"] + terms["bottomstress"] 
+terms["sum"] = terms["surfstress"] + terms["nonlin"] + terms["bottomstress"]# + terms["massflux"] 
 tday = terms.time / np.timedelta64(1,"D")
 
-colors = cmc.batlow(np.linspace(0, 1, 5))
+colors = cmc.batlow(np.linspace(0, 1, 6))
 for term, color in zip(terms, colors):
     ax.plot(tday, -terms[term], label=term, color=color)
     
@@ -86,7 +86,7 @@ for idx in idxs:
     Hs.append(H)
     
 results = xr.concat(termlist, dim="H")
-results["sum"] = results["surfstress"] + results["nonlin"] + results["bottomstress"]
+results["sum"] = results["surfstress"] + results["nonlin"] + results["bottomstress"]# + results["massflux"] 
 
 circ = xr.concat(circlist, dim="H")
 
@@ -174,7 +174,7 @@ axd["circ"].pcolormesh(idh, tday[-Tn:], circT.T,
 
 
 
-terms = ["sum", "surfstress", "nonlin", "bottomstress"]
+terms = ["sum", "surfstress", "nonlin", "bottomstress"]#, "massflux"]
 for term, color in zip(terms, colors):
     
     result = -resultsT[term]
