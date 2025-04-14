@@ -17,6 +17,10 @@
 | 018 | 32 days period, 90 km wavelength |
 | 050 | Constant prograde winds |
 | 051 | Constant retrograde winds |
+| 052 | Prograde shifted sinusodal winds, 16 days forcing period |
+| 053 | Retrograde shifted sinusodal winds, 16 days forcing period |
+| 054 | Linearly increasing prograde wind |
+| 055 | Linearly increasing retrograde wind |
 | 100 | Stocastic winds, 5 days, no bumps |
 | 101 | Stocastic winds, 128 days, no bumps |
 | 102 | Stocastic winds, repeated to integrate to 0, no bumps |

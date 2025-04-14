@@ -1,0 +1,7 @@
+{
+    "name": "slope-053",    
+    "T": 1382400.0,
+    "d" : -0.1,
+    "tmax": 16588800,
+    "forcing_file": "slope/input/slope-053_forcing.nc" 
+}
