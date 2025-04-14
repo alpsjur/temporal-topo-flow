@@ -49,7 +49,7 @@ def update(frame):
     return quiver,
 
 # Create animation
-ani = animation.FuncAnimation(fig, update, frames=len(time), interval=200, blit=False)
+ani = animation.FuncAnimation(fig, update, frames=len(time), interval=100, blit=False)
 
 # Save or show animation
 ani.save(f"slope/animations/forcings/{config}_forcing_animation.mp4", writer="ffmpeg", dpi=150)  # Save as MP4
