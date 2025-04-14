@@ -101,8 +101,8 @@ def get_h(params):
     dx = params["dx"]
     dy = params["dy"]
 
-    x = np.arange(dx/2, Lx-dx/2, dx)
-    y = np.arange(dy/2, Ly-dy/2, dy)
+    x = np.arange(dx/2, Lx, dx)
+    y = np.arange(dy/2, Ly, dy)
 
     X, Y = np.meshgrid(x, y)
     h = calculate_bathymetry(X, Y, params)
@@ -113,7 +113,7 @@ def get_h(params):
 # Depth-Following Contour Calculations
 # ================================
 
-def calculate_analytical_xt(y, H, params):
+def calculate_analytical_xt2(y, H, params):
     """Compute x-coordinates along a contour based on depth
     by inplicitly solving analytical function for bathymetry.
     
@@ -134,6 +134,8 @@ def calculate_analytical_xt(y, H, params):
             x = np.atleast_1d(x)  # Ensure x is array-like
             steepness = 1 / np.cosh(np.pi * (x - XC) / W) ** 2
             corr = a * np.sin(2 * np.pi * y_val / lam) * steepness
+            #slope = 
+            
             return x - (XC + W / np.pi * np.arctanh((2 * (H - DB)) / DS - 1) + corr)
 
         xt = fsolve(implicit_eq, np.array([x0]))[0]  # Solve for x
@@ -144,6 +146,36 @@ def calculate_analytical_xt(y, H, params):
         return solve_xt(y)  # Solve for a single y
     else:
         return np.array([solve_xt(y_val) for y_val in y])  # Solve for each y separately
+
+    
+def calculate_analytical_xt(y, H, params):
+    """Compute x-coordinates along a contour based on depth,
+    using skimage to find points along the contour.
+    Depth is calculated from analytical function
+    """
+    from skimage.measure import find_contours
+    
+    h = get_h(params)
+    
+    contours = find_contours(h, level=H)
+    contour = contours[0]
+
+    # reverse first dimension
+    contour = contour[::-1,:]
+    contour
+
+    jdx = np.arange(0,90,1)
+
+    idx = []
+    for row in contour:
+        if row[0] in jdx:
+            idx.append(row[1])
+    idx = np.array(idx)
+    
+    dx = params["dx"]
+    xt = idx*dx 
+    
+    return xt
     
 def calculate_numerical_xt(y, H, params):
     """Compute x-coordinates along a contour based on depth,
@@ -177,14 +209,18 @@ def calculate_xt(y, H, params):
     if "bathymetry_file" in params:
         return calculate_numerical_xt(y, H, params)
     else:
-        return calculate_analytical_xt(y, H, params)
+        return calculate_analytical_xt2(y, H, params)
+        #return calculate_numerical_xt(y, H, params)
 
 def compute_contour_vectors(y, H, params):
     """Compute vectors along depth-following contours."""
     xt = calculate_xt(y, H, params)
  
+    # handle reentrant direction
     xtext = np.insert(xt, 0, xt[-1])
     xtext = np.append(xtext, xt[1])
+    
+    # Compute dx
     dxt = np.gradient(xtext)[1:-1]
 
     # Normalize vectors
@@ -307,12 +343,13 @@ def depth_following_grid(params):
         ),
     )
     
-    
-def hnorm_on_xygrid(params, ds):
+def gradh_on_xygrid(params, ds):
     dx = params["dx"]
     dy = params["dy"]
     
     h = ds.h.isel(time=1).squeeze().values
+    
+    # handle reentrant directoin
     h = np.insert(h, 0, h[-1,:], axis=0)
     h = np.append(h, h[1,:][None,:], axis=0)
     
@@ -322,15 +359,11 @@ def hnorm_on_xygrid(params, ds):
     dh_dx = dh_dx[1:-1,:]
     dh_dy = dh_dy[1:-1,:]
     
-    magnitude = np.sqrt(dh_dy**2 + dh_dx**2) + 1e-12
-    dh_dx /= magnitude
-    dh_dy /= magnitude
+    # _, slope_end_idx = slope_end(params)
+    # dh_dx[:,slope_end_idx:] = 1
+    # dh_dy[:,slope_end_idx:] = 0
     
-    _, slope_end_idx = slope_end(params)
-    dh_dx[:,slope_end_idx:] = 1
-    dh_dy[:,slope_end_idx:] = 0
-    
-    hnorm = xr.Dataset(
+    hgrad = xr.Dataset(
         data_vars=dict(
             dhdx = (["yC", "xC"], dh_dx),
             dhdy = (["yC", "xC"], dh_dy)
@@ -341,12 +374,117 @@ def hnorm_on_xygrid(params, ds):
         )
     )
     
+    return hgrad
+    
+def hnorm_on_xygrid(params, ds):
+    hgrad = gradh_on_xygrid(params, ds)
+    
+    dh_dx = hgrad.dhdx
+    dh_dy = hgrad.dhdy
+    
+    _, slope_end_idx = slope_end(params)
+    dh_dx[:,slope_end_idx:] = 1
+    dh_dy[:,slope_end_idx:] = 0
+    
+    magnitude = np.sqrt(dh_dy**2 + dh_dx**2) + 1e-12
+    dh_dx /= magnitude
+    dh_dy /= magnitude
+    
+    hnorm = xr.Dataset()
+    hnorm["dhdxn"] = dh_dx 
+    hnorm["dhdyn"] = dh_dy
+    
+    
     return hnorm
     
 
 # ================================
 # Helper Functions and Utilities
 # ================================
+
+def construct_xgcm_grid(ds, params):
+    import xgcm
+    
+    # 
+    dx = params["dx"]
+    dy = params["dy"]
+    
+    # === Broadcast grid metrics
+    dx_2d = xr.DataArray(dx * np.ones((len(ds['yC']), len(ds['xF']))),
+                            dims=('yC', 'xF'), coords={'yC': ds['yC'], 'xF': ds['xF']})
+    dy_2d = xr.DataArray(dy * np.ones((len(ds['yF']), len(ds['xC']))),
+                            dims=('yF', 'xC'), coords={'yF': ds['yF'], 'xC': ds['xC']})
+    area = xr.DataArray(dx * dy * np.ones((len(ds['yC']), len(ds['xC']))),
+                        dims=('yC', 'xC'), coords={'yC': ds['yC'], 'xC': ds['xC']})
+
+    ds['dx'] = dx_2d
+    ds['dy'] = dy_2d
+    ds['area'] = area
+
+    # === Define grid and attach metrics
+    coords = {
+        'X': {'center': 'xC', 'left': 'xF'},
+        'Y': {'center': 'yC', 'left': 'yF'}
+    }
+
+    metrics = {
+        ('X',): ['dx'],
+        ('Y',): ['dy'],
+        ('X', 'Y'): ['area']
+    }
+
+    grid = xgcm.Grid(ds, coords=coords, metrics=metrics, periodic=['Y'])
+    
+    return grid
+
+def interp_var(grid, da, shiftdict, params=default_params):
+    """
+    Interpolate a DataArray `da` using an xgcm.Grid object `grid`.
+    The `shiftdict` defines how to shift dimensions (e.g., {"xF": "xC"} or {"xC": "xF"}).
+    
+    If interpolating from xF to xC, we first trim one element.
+    If interpolating from xC to xF, we extrapolate to get back to the original xF length.
+    """
+    for old_dim, new_dim in shiftdict.items():
+        if old_dim not in da.dims:
+            continue
+
+        axis = "X" if old_dim.startswith("x") else "Y"
+        to = "left" if new_dim.endswith("F") else "center"
+
+        # === Handle bounded x-axis: xF → xC
+        if axis == "X" and old_dim == "xF" and new_dim == "xC":
+            da = da.isel(xF=slice(None, -1))  # remove last point
+
+        # === Interpolate
+        da_interp = grid.interp(da, axis=axis, to=to)
+        #da_interp = da_interp.rename({old_dim: new_dim})
+
+        # === Handle bounded x-axis: xC → xF
+        if axis == "X" and old_dim == "xC" and new_dim == "xF":
+            # Interpolated data is N, we want N+1: extrapolate last point
+            last_val = da_interp.isel(xF=-1)
+            last_val = last_val.expand_dims(xF=[da_interp.xF[-1] + params["dx"]])
+            da_interp = xr.concat([da_interp, last_val], dim="xF")
+
+        da = da_interp
+    return da
+
+def interp_ds(ds, params, varnames, shiftdict={"xF": "xC", "yF": "yC"}):
+    """
+    Interpolates selected variables in `varnames` from source to target grid positions.
+    Uses the `shiftdict` to determine how each coordinate should be shifted.
+    """
+    from copy import deepcopy
+    ds_out = deepcopy(ds)  # preserve input
+    grid = construct_xgcm_grid(ds, params)
+
+    for var in varnames:
+        da = ds[var]
+        da_interp = interp_var(grid, da, shiftdict)
+        ds_out[var] = da_interp
+
+    return ds_out
 
 def slope_end(params):
     """Determine slope endpoint."""
@@ -387,7 +525,8 @@ def get_vorticityflux_at_contour(contour, ds):
     return (vortUt * contour.dl).sum(dim="j")
 
 def load_parameters():
-    """Load simulation parameters from configuration file or defaults."""
+    """Load simulation parameters from configuration file 
+    (if runtime argument provided), else defaults."""
     import sys
     if len(sys.argv) == 2:
         config_path = sys.argv[1]
@@ -484,8 +623,11 @@ def integrated_zonal_momentum_terms(params, ds, xidx):
     yC = ds.yC.values
     yF = ds.yF.values
     
-    hC = calculate_bathymetry(x, yC, params)
-    hF = calculate_bathymetry(x, yF, params)
+    hC = ds.h.isel(xC=xidx).values    
+    
+    # handle reentrant direction
+    hF = np.insert(hC, 0, hC[:,-1], axis=1)
+    hF = 0.5*(hF[:,1:]+hF[:,:-1])
     
     surfstress = -windforcing(t, params)
     nonlin = -ds.duvhdx.isel(xC=xidx).mean("yC")
