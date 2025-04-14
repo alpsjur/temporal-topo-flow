@@ -22,7 +22,18 @@ xidx = 45
 results = integrated_zonal_momentum_terms(params, ds, xidx)
 
 
-fig, [ax, ax2] = plt.subplots(figsize=(10,10), nrows=2, sharex=True)
+#fig, [ax, ax2] = plt.subplots(figsize=(10,10), nrows=2, sharex=True)
+fig = plt.figure(layout="constrained", figsize=(10,10))
+axd = fig.subplot_mosaic(
+    [
+        ["terms"],
+        ["circ"],
+    ],
+    height_ratios=[2, 1],
+    sharex=True
+)
+ax = axd["terms"]
+ax2 = axd["circ"]
 ax.set_title(f"Momentum terms and circulation integrated along x = \
     {xidx*params["dx"]/1e3:.0f} km")
 axes_styling(ax)

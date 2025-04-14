@@ -74,7 +74,7 @@ def main():
         
         path = "slope/configs/"
         #configs = os.listdir(path)
-        configs = [f"slope-{i:03}.json" for i in [201, 203]]
+        configs = [f"slope-{i:03}.json" for i in [4, 301]]
         configs = [path+config for config in configs]
         loop_over_configs(configs, ax)
         ax.legend(
@@ -85,7 +85,7 @@ def main():
         
         #fig.savefig("slope/figures/profiles/Vtransport_profiles_16day_varying_lambda.png")
         #fig.savefig("slope/figures/profiles/Vtransport_profiles_varying_T.png")
-        fig.savefig("slope/figures/profiles/Vtransport_profiles_sinusodal.png")
+        fig.savefig("slope/figures/profiles/Vtransport_profiles_mono_multi.png")
         
         # Optional: Show plots interactively
         plt.show()

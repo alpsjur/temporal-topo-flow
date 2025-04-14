@@ -1,6 +1,6 @@
 {
     "name": "slope-202",
-    "dt" : 4.0,
+    "dt" : 1.0,
     "GPU": true,
     "tmax": 16588800,
     "forcing_file": "slope/input/slope-200_forcing.nc" 

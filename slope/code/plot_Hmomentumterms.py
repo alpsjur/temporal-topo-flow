@@ -25,7 +25,19 @@ contour = depth_following_contour(params, H)
 Ut, Vt =  get_contour_following_velocities(contour, ds)
 cL = contour.dl.sum(dim=("j")).values
 
-fig, [ax, ax2] = plt.subplots(figsize=(10,10), nrows=2, sharex=True)
+#fig, [ax, ax2] = plt.subplots(figsize=(10,10), nrows=2, sharex=True)
+fig = plt.figure(layout="constrained", figsize=(10,10))
+axd = fig.subplot_mosaic(
+    [
+        ["terms"],
+        ["circ"],
+    ],
+    height_ratios=[2, 1],
+    sharex=True
+)
+ax = axd["terms"]
+ax2 = axd["circ"]
+
 ax.set_title(f"Momentum terms and circulation integrated along depth = \
     {H:.0f} m")
 axes_styling(ax)

@@ -13,7 +13,7 @@ Spørsmål: Hvordan kommer de frem til et uttrykk for form drag som funksjon av 
 ### TODO 
   - [x] Gausisk pådrag, slik som i masteroppgaven.
   - [x] Integrere momentumlikning både i tid og rom
-  - [ ] Arealintegral for H-kontur: må også inkludere forn-drag-integranden.
+  - [x] Arealintegral for H-kontur: må også inkludere forn-drag-integranden.
   - [ ] Stokastisk vind: hvorfor får jeg en veldig tydelig mode for y-komponenten, men ikke x-komponenten? Noe å undersøke. 
   - [ ] Hvordan kan vi knytte dette studiet til Arktis? Kan vi trekke in observasjoner på noen måte?
   - [x] Kjøringer med konstant pådrag, baseline. 
@@ -22,11 +22,15 @@ Spørsmål: Hvordan kommer de frem til et uttrykk for form drag som funksjon av 
   - [x] Momentum terms analysis as .py file.
   - [x] Plotte PV for å se hva som skjer ved grensene
   - [x] Stokastisk vind + bumps 
-  - [ ] Spekter av bumps
+  - [x] Spekter av bumps
   - [ ] RYDDE KODE
   - [x] Rydde opp i kjøringer og kjøre på nytt...
   - [ ] Regne flux av f ut ifra endring i eta, mer stabilt?
   - [ ] Rename massflux -> fflux? Maybe just write it is zero, and not include it in the plots?
+  - [x] Integrere h-formstress numerisk. Blir dette samme som i cartesiske koordinater?
+  - [ ] Regne ut dispersjonsrelasjon til topografiske bølger.
+  - [ ] Bruke xgcm til regridding (rydde kode)
+  - [ ] Kunturfinner er ikke robust på flata
 
 ### Leselist
   - [x] Marshall - Climate response functions 
@@ -43,3 +47,12 @@ Spørsmål: Hvordan kommer de frem til et uttrykk for form drag som funksjon av 
 - Marshal et al. (2017) har referanser til studier som ser på vindregimer over arktis
 - Zhang et al. (1996) har mange referanser til studier som viser "mean flow generation by winds".
 - Det ser ut til at det ikke finnes teori som forklarer residualstrøm i retrograde retning (for enkelte across-slope possisjon).Er dette noe jeg ser?
+
+
+### Arealintegral 
+- Form stress i kartesiske koordinater: samme resultat om man antar rigid-lid eller inkluderer free surface
+- Form stress H kontur: man kan ikke skrive om fra $H\nabla \eta$ til $-\eta \nabla H$.
+- Å integrere over x y, eller over C(H) H, gir kalitativt samme resultat for momentumleddene langs konturer.
+- Så langt klarer jeg ikke å få de to termene til å bli det samme. men kanskje de ikke skal bli det samme? Dette må jeg tneke på.
+- Virvligsfluksen blir ikke ~0 for dybdekonturer. 
+- Må regne ut det ikke-lineære leddet på fluksdivergensform.
