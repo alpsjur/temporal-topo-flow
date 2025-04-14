@@ -306,6 +306,14 @@ omega_field = Field(∂x(v) - ∂y(u))
 omegau = Field(omega_field * u)
 omegav = Field(omega_field * v)
 
+# terms for form stress on depth-following contour
+# dhdx = Field(∂x(h))
+# dhdy = Field(∂y(h))
+# dH² =  Field(@at (Center, Center, Center) dhdx^2+dhdy^2)
+# dH = dH²^(0.5)
+# FSHx = -h*detadx*dhdy/dH 
+# FSHy = h*detady*dhdx/dH 
+
 #divomega_flux = Field(∂x(omega_u) + ∂y(omega_v))
 
 fields = Dict("u" => u, "v" => v, 
@@ -315,7 +323,8 @@ fields = Dict("u" => u, "v" => v,
               "duvhdx" => duvhdx, "duvhdy" => duvhdy, 
               "duuhdx" => duuhdx, "duuhdy" => duuhdy, 
               "dvvhdx" => dvvhdx, "dvvhdy" => dvvhdy, 
-              "detadx" => detadx, "detady" => detady
+              "detadx" => detadx, "detady" => detady,
+              #"FSHx" => FSHx, "FSHy" => FSHy
               )
 
 simulation.output_writers[:field_writer] = NetCDFOutputWriter(model, fields, 
