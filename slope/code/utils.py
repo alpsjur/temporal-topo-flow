@@ -596,9 +596,17 @@ def analytical_circ(params, t, cL, H, nonlin=None):
     """
     R = params["R"]
     Ly = params["Ly"]
+    rho = params["rho"]
     outputtime = params["outputtime"]
     
-    forcing = windforcing(t, params)* Ly/(cL*H)
+    # update forcing to forcing prescribed from file if file is defined
+    if "forcing_file" in params:
+        tau = xr.open_dataset(params["forcing_file"]).squeeze()
+        forcing = -tau.forcing_y.mean(("y", "x")).values* Ly/(cL*H*rho)
+        #forcing = np.insert(forcing,0,0)    # add first missing timestep
+        forcing = np.append(forcing, 0)
+    else:
+        forcing = windforcing(t, params)* Ly/(cL*H)
 
     if nonlin is not None:
         forcing += nonlin / cL

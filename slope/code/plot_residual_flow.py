@@ -10,6 +10,10 @@ from utils import load_parameters, load_dataset, calculate_bathymetry
 params = load_parameters()
 data = load_dataset(params["filepath"], params["name"])
 
+# if params["name"] == "slope-200":
+#     print("hey")
+#     data = data.isel(time=slice(None,128*8))
+
 # Extract variables
 x = data['xC'].values 
 y = data['yC'].values 

@@ -30,7 +30,7 @@ Manifest.toml
 __pycache__/
 
 ### Other ###
-*/configs/run/*
+*/configs/run*
 
 .vscode
 

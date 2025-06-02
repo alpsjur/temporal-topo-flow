@@ -7,7 +7,6 @@ from utils import default_params, load_parameters
 params = load_parameters()
 
 config = params["name"] 
-T = params["T"]
 d = params["d"]
 
 days2sec = 60*60*24

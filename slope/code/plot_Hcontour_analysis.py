@@ -90,6 +90,7 @@ def plot_results(params, ds, xvals, t, t_days, cmap):
         
         cL = contour.dl.sum(dim=("j")).values
 
+        
         nonlin = get_vorticityflux_at_contour(contour, ds).values   
         Ut, Vt =  get_contour_following_velocities(contour, ds)
         alignments = compute_alignment(Ut, Vt)
@@ -100,17 +101,33 @@ def plot_results(params, ds, xvals, t, t_days, cmap):
         analytical_nonlinear = analytical_circ(params, t, cL, H, nonlin) * 1e2
         numerical = -(Vt*contour.dl).sum(dim=("j"))/cL * 1e2  # Convert to cm/s
 
-        axts.plot(t_days[:Tinc], numerical[:Tinc]*H, 
+        # axts.plot(t_days[:Tinc], numerical[:Tinc]*H, 
+        #           color=color, 
+        #           label=f"{int(H)}m depth",
+        #           zorder = len(xvals)-i,
+        #           )
+        # axts.plot(t_days[:Tinc], analytical_linear[:Tinc]*H, 
+        #           color=color, 
+        #           linestyle="--",
+        #           zorder = len(xvals)-i,
+        #           )
+        # axts.plot(t_days[:Tinc], analytical_nonlinear[:Tinc]*H, 
+        #           color=color, 
+        #           linestyle="-." ,
+        #           zorder = len(xvals)-i,
+        #           )
+        
+        axts.plot(t_days[-Tinc:], numerical[-Tinc:]*H, 
                   color=color, 
                   label=f"{int(H)}m depth",
                   zorder = len(xvals)-i,
                   )
-        axts.plot(t_days[:Tinc], analytical_linear[:Tinc]*H, 
+        axts.plot(t_days[-Tinc:], analytical_linear[-Tinc:]*H, 
                   color=color, 
                   linestyle="--",
                   zorder = len(xvals)-i,
                   )
-        axts.plot(t_days[:Tinc], analytical_nonlinear[:Tinc]*H, 
+        axts.plot(t_days[-Tinc:], analytical_nonlinear[-Tinc:]*H, 
                   color=color, 
                   linestyle="-." ,
                   zorder = len(xvals)-i,

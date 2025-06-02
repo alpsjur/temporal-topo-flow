@@ -203,6 +203,9 @@ axd["circ"].set_xlabel("Contour index")
 axd["circ"].set_ylabel("Time [days]")
 axd["tmean"].set_ylabel("m2 s-2")
 axd["xmean"].set_xlabel("m2 s-2")
+
+if config in ["slope-052", "slope-053"]:
+    axd["tmean"].set_ylim(-5e-5,5e-5)
   
     
 axd["legend"].axis("off")
