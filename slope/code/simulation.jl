@@ -47,7 +47,7 @@ default_params = Dict(
     "sigma" => 1.0,             # Standard deviation of noise
     "a" => 10e3,                 # Horizontal length scale of corrigations
     "lam" => 45e3,              # Wave length of corriations
-    "noise" => false
+    "noise" => false,
 )
 
 # Function to load and selectively overwrite parameters from JSON
@@ -80,6 +80,16 @@ if use_gpu && CUDA.functional()
 else
     architecture = CPU()
     @info "Running on CPU"
+end
+
+# Check momentum advection flag in config
+nonlinear = get(params, "nonlinear", true)  # Default is true if not in config
+
+if nonlinear 
+    momentum_advection=VectorInvariant()
+else
+    momentum_advection=nothing
+    @info "Turning of momentum advection"
 end
 
 
@@ -249,7 +259,7 @@ end
 
 coriolis = FPlane(f=params["f"])
 model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration=params["gravitational_acceleration"],
-                          momentum_advection=VectorInvariant(),
+                          momentum_advection=momentum_advection,
                           bathymetry=bathymetry,
                           formulation=VectorInvariantFormulation(),
                           forcing=(u=forcing_u, v=forcing_v))
