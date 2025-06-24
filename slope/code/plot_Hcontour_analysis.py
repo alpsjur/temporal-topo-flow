@@ -133,7 +133,7 @@ def plot_results(params, ds, xvals, t, t_days, cmap):
                   zorder = len(xvals)-i,
                   )
 
-        axscatter[0].scatter(analytical_linear*H, numerical*H, 
+        axscatter[0].scatter(analytical_linear, numerical, 
                              s=16, 
                              alpha=0.7, 
                              marker = "x",
@@ -141,7 +141,7 @@ def plot_results(params, ds, xvals, t, t_days, cmap):
                              zorder = len(xvals)-i,
                              label=f"{int(H)}m depth"
                              )
-        axscatter[1].scatter(analytical_nonlinear*H, numerical*H, 
+        axscatter[1].scatter(analytical_nonlinear, numerical, 
                              s=16, 
                              alpha=0.7, 
                              marker = "x",
@@ -151,7 +151,7 @@ def plot_results(params, ds, xvals, t, t_days, cmap):
 
         vorticity_contribution = numerical - analytical_linear
         axvort[0].scatter(#numerical*H, vorticity_contribution*H, 
-                          analytical_linear*H, vorticity_contribution*H,
+                          analytical_linear, vorticity_contribution,
                           s=16, 
                           alpha=0.7, 
                           marker = "x",
@@ -160,7 +160,7 @@ def plot_results(params, ds, xvals, t, t_days, cmap):
                           label=f"{int(H)}m depth"
                           )
         axvort[1].scatter(#numerical*H, nonlin * H * H / R * 1e2, 
-                          analytical_linear*H, nonlin * H * H / R * 1e2,
+                          analytical_linear, nonlin  * H / R * 1e2,
                           s=16, 
                           alpha=0.7, 
                           marker = "x",
@@ -205,7 +205,7 @@ def main():
         t = ds.time / np.timedelta64(1, 's')
         t_days = ds.time / np.timedelta64(1, 'D')
 
-        xvals = (10, 40, 45, 50, 55, 80)
+        xvals = (40, 45, 50, 55)
         cmap = cmc.batlow
 
         figscatter, figvort, figts, figalsc, fig = plot_results(

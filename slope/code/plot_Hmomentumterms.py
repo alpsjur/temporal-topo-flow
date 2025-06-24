@@ -83,15 +83,17 @@ idxs = np.arange(xstart, xstop)
 termlist = []
 circlist = []
 Hs = []
-idy = int(params["lam"]/params["dy"]*0.5)
+#idy = int(params["lam"]/params["dy"]*0.5)
 for idx in idxs:
-    H = ds.h.isel(time=1,xC=idx, yC=idy).values
+    #H = ds.h.isel(time=1,xC=idx, yC=idy).values
+    H = ds.h.isel(time=1,xC=idx).mean("yC").values
     terms = integrated_contour_momentum_terms(params, ds, H).squeeze()
     
     contour = depth_following_contour(params, H)
     Ut, Vt =  get_contour_following_velocities(contour, ds)
     cL = contour.dl.sum(dim=("j")).values
     numerical = -(Vt*contour.dl).sum(dim=("j"))*H/cL 
+    #numerical = -(Vt*contour.dl).sum(dim=("j"))/cL 
     
     termlist.append(terms)
     circlist.append(numerical)
@@ -119,7 +121,7 @@ idh = np.arange(len(idxs))
 terms = ["surfstress", "nonlin", "bottomstress"]
 axes = [axd[f"{i}"] for i in range(3)]
 for term, ax in zip(terms, axes):
-    cm = ax.pcolormesh(idh, tday, -results[term].T, vmin=-vmax, vmax=vmax, cmap=cmc.vik)
+    cm = ax.pcolormesh(idxs, tday, -results[term].T, vmin=-vmax, vmax=vmax, cmap=cmc.vik)
     ax.set_title(term)
     ax.set_ylim(tmaxd-Td, tmaxd)
     
@@ -130,7 +132,7 @@ axd["C"].set_xticks([])
 axd["C"].set_yticks([])
     
 fig.colorbar(cm, cax=axd["cb"], label="m2 s-2")
-fig.supxlabel("Contour index")
+fig.supxlabel("Equivalent x [km]")
 fig.supylabel("Time [days]")
     
 axd["0"].set_xticks([])
@@ -180,11 +182,17 @@ Tn = int(params["T"]/params["outputtime"])
 circT = circ.isel(time=slice(-Tn, None))
 resultsT = results.isel(time=slice(-Tn, None))
 vmax = np.max(np.abs(circT))
-axd["circ"].pcolormesh(idh, tday[-Tn:], circT.T, 
+pcirc = axd["circ"].pcolormesh(idxs, tday[-Tn:], circT.T, 
                   vmin=-vmax, vmax=vmax, 
                   cmap=cmc.vik)
 
-
+cbar = fig.colorbar(
+    pcirc, ax=axd["circ"],
+    location="bottom",  # new API
+    orientation="horizontal",
+    shrink=0.85, #pad=0.1,
+    label="Circulation [m2 s-1]"
+)
 
 terms = ["sum", "surfstress", "nonlin", "bottomstress"]#, "massflux"]
 for term, color in zip(terms, colors):
@@ -194,12 +202,12 @@ for term, color in zip(terms, colors):
     xmean = result.mean("H")
     
     
-    axd["tmean"].plot(idh, tmean, label=term, color=color)
+    axd["tmean"].plot(idxs, tmean, label=term, color=color)
     axd["xmean"].plot(xmean[-Tn:], tday[-Tn:], label=term, color=color)
     axd["legend"].plot([None, None], [None, None], label=term,color=color)
     
     
-axd["circ"].set_xlabel("Contour index")
+axd["circ"].set_xlabel("Equivalent x [km]")
 axd["circ"].set_ylabel("Time [days]")
 axd["tmean"].set_ylabel("m2 s-2")
 axd["xmean"].set_xlabel("m2 s-2")

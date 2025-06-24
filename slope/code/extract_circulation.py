@@ -11,8 +11,8 @@ t = ds.time / np.timedelta64(1, 's')
 t_days = ds.time / np.timedelta64(1, 'D')
 
 xvals = 45
-depths = np.arange(100,901,100)
-
+depths = np.arange(200,900,100)
+#depths = np.arange(101,901,100)
 
 als = []
 ans = []

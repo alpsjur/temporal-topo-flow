@@ -83,7 +83,7 @@ circlist = []
 for xidx in idxs:
     terms = integrated_zonal_momentum_terms(params, ds, xidx).squeeze()
     numerical = -(ds.v.isel(xC=xidx)*calculate_bathymetry(ds.xC.isel(xC=xidx), ds.yF, params)).mean("yF")
- 
+    #numerical = -(ds.v.isel(xC=xidx)).mean("yF")
     
     termlist.append(terms)
     circlist.append(numerical)
@@ -172,10 +172,17 @@ Tn = int(params["T"]/params["outputtime"])
 circT = circ.isel(time=slice(-Tn, None))
 resultsT = results.isel(time=slice(-Tn, None))
 vmax = np.max(np.abs(circT))
-axd["circ"].pcolormesh(idxs, tday[-Tn:], circT.T, 
+pcirc = axd["circ"].pcolormesh(idxs, tday[-Tn:], circT.T, 
                   vmin=-vmax, vmax=vmax, 
                   cmap=cmc.vik)
 
+cbar = fig.colorbar(
+    pcirc, ax=axd["circ"],
+    location="bottom",  # new API
+    orientation="horizontal",
+    shrink=0.85, #pad=0.1,
+    label="Circulation [m2 s-1]"
+)
 
 
 terms = ["sum", "surfstress", "nonlin", "bottomstress","formstress"]
