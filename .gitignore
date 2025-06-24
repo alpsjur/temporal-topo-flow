@@ -44,3 +44,5 @@ animations/
 output/
 input/
 
+# exploratory stuff
+slope/notebooks/sandbox/*
