@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Ask for user email
+read -p "Enter your email address for a notification when the simulation is done: " user_email
+
+# Confirm input (optional)
+echo "Email entered: $user_email"
+
+# Create output/raw directory if it doesn't exist
+mkdir -p output/raw
+
+# Define the filename variable
+FILENAME="scripts/simulation.jl"
+
+SUCSESS="Skript ferdig! :) \n\nHilsen\n$(hostname)"
+FAIL="Oi, nå har det skjedd noe galt. Skript feila :( \nDet går bra, dette fikser du! \n\nHilsen\n$(hostname)"
+
+
+for CONFIG in configs/*
+do
+    nice julia --project=. $FILENAME $CONFIG && echo -e "$SUCSESS" | mail -s "$FILENAME $CONFIG" $user_email || echo -e "$FAIL" | mail -s "$FILENAME $CONFIG" $user_email
+done
