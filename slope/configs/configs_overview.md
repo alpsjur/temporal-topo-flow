@@ -10,11 +10,17 @@
 | 006 |  128 days forcing period|
 | 007 |  256 days forcing period|
 | 010 |  No corrigations |
-| 011 |  No corrigations, 64 days period |
+| 011 |  No corrigations, 16 days period |
+| 012 |  No corrigations, 128 days period |
 | 015 | 16 days period, 22.5 km wavelength |
 | 016 | 16 days period, 90 km wavelength |
 | 017 | 32 days period, 22.5 km wavelength |
 | 018 | 32 days period, 90 km wavelength |
+| 019 | 128 days period, 22.5 km wavelength |
+| 020 | 128 days period, 90 km wavelength |
+| 030 | 16 days period, 2x forcing |
+| 031 | 16 days period, 4x forcing |
+| 032 | 16 days period, 8x forcing |
 | 050 | Constant prograde winds |
 | 051 | Constant retrograde winds |
 | 052 | Prograde shifted sinusodal winds, 16 days forcing period |
@@ -32,6 +38,11 @@
 | 203 | Sinusodal winds, with bumps, 32 days period |
 | 300 | Specter of bumps |
 | 301 | Specter of bumps, 32 days forcing period |
+| 302 | Specter of bumps, 128 days forcing period |
+| 400 | Slope width 20km, 128 days period |
+| 401 | Slope width 40km, 128 days period |
+| 402 | Slope width 50km, 128 days period |
+| 403 | Slope width 60km, 128 days period |
 
 
 

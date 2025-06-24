@@ -1,0 +1,6 @@
+{
+    "name": "slope-302",
+    "T": 11059200.0,
+    "tmax": 33177600.0,
+    "bathymetry_file": "slope/input/slope-300_bathymetry.nc"
+}
