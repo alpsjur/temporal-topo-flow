@@ -29,8 +29,9 @@ Spørsmål: Hvordan kommer de frem til et uttrykk for form drag som funksjon av 
   - [ ] Rename massflux -> fflux? Maybe just write it is zero, and not include it in the plots?
   - [x] Integrere h-formstress numerisk. Blir dette samme som i cartesiske koordinater?
   - [ ] Regne ut dispersjonsrelasjon til topografiske bølger.
-  - [ ] Bruke xgcm til regridding (rydde kode)
-  - [ ] Kunturfinner er ikke robust på flata
+  - [x] Bruke xgcm til regridding (rydde kode)
+  - [ ] Konturfinner er ikke robust på flata
+  - [ ] Se på ERA-5 for å si noe om forcing over Arktis, og implikajsoner 
 
 ### Leselist
   - [x] Marshall - Climate response functions 
@@ -38,9 +39,6 @@ Spørsmål: Hvordan kommer de frem til et uttrykk for form drag som funksjon av 
   - [ ] "Mean flow generation along a sloping region  in a rotating homogeneous fluid"
   - [ ] Bai et al, for inspo
 
-
-### Ting å ta opp
-- Johan foreslo å se på responsfunksjoner til trinnvis endring. Men vil ikke dette gi oss den lineære responsen bare, som vi allerede kjenner? 
 
 
 ### Ting å huske
