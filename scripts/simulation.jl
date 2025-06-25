@@ -168,22 +168,22 @@ if forcing_from_file
         return f1 + (f2 - f1) * (t - t1) / (t2 - t1)
     end
 
-    tx_parameters = (; rho=params["rho"], dn=params["dn"], omegan=2π / params["Tn"], R=params["R"],
+    tx_parameters = (; R=params["R"],
                      time=time_gpu, fdt=params["outputtime"], forcing_data=forcing_x_data)
 
-    ty_parameters = (; rho=params["rho"], d=params["d"], omega=2π / params["T"], R=params["R"],
+    ty_parameters = (; R=params["R"],
                      time=time_gpu, fdt=params["outputtime"], forcing_data=forcing_y_data)
 
     @inline function tx(i, j, k, grid, clock, model_fields, p)
         u = @inbounds model_fields.u[i, j, k]
         h = @inbounds model_fields.h[i, j, k]
-        return h <= 0 ? 0.0 : -p.R * u / h + interpolate_forcing(i, j, clock.time, p.forcing_data, p) / (p.rho * h)
+        return h <= 0 ? 0.0 : -p.R * u / h + interpolate_forcing(i, j, clock.time, p.forcing_data, p) /  h
     end
 
     @inline function ty(i, j, k, grid, clock, model_fields, p)
         v = @inbounds model_fields.v[i, j, k]
         h = @inbounds model_fields.h[i, j, k]
-        return h <= 0 ? 0.0 : -p.R * v / h + interpolate_forcing(i, j, clock.time, p.forcing_data, p) / (p.rho * h)
+        return h <= 0 ? 0.0 : -p.R * v / h + interpolate_forcing(i, j, clock.time, p.forcing_data, p) /  h
     end
 
     forcing_u = Forcing(tx, discrete_form=true, parameters=tx_parameters)
