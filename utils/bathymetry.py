@@ -18,8 +18,8 @@ def generate_bathymetry(p):
     Generate a 2D bathymetry field h(x, y) over the model grid.
     Returns meshgrids X, Y and bathymetry h.
     """
-    x = np.arange(0, p["Lx"], p["dx"])
-    y = np.arange(0, p["Ly"], p["dy"])
+    x = np.arange(0, p["Lx"]+p["dx"]/2, p["dx"])
+    y = np.arange(0, p["Ly"]+p["dy"]/2, p["dy"])
     X, Y = np.meshgrid(x, y, indexing="ij")
 
     h_func = np.vectorize(lambda x, y: bathymetry_xy(x, y, p))
