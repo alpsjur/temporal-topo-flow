@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 from cmcrameri import cm as cmc
+from cmocean import cm as cmo
 import numpy as np
-from matplotlib import colors
 
 ### Global style of figures ###
 
@@ -20,8 +20,8 @@ figure_sizes_in = {
 palette = {
     "background": "#ffffff",
     "text": "#000000",
-    "accent1": "#1f77b4",  # classic blue
-    "accent2": "#d62728",  # classic red
+    "accent1": "#E64A19",  
+    "accent2": "#6495ED",  
     "cmdiv": cmc.vik,      # muted, diverging
     "cmcat": cmc.batlow,   # perceptually uniform, colorblind-friendly
     "cmseq": cmc.buda      # good for 1D fields (e.g., SSH, T, etc.)
@@ -104,28 +104,15 @@ def create_figure(width="single", aspect_ratio=0.6, **kwargs):
     fig, ax = plt.subplots(figsize=(fig_width_in, fig_height_in), **kwargs)
     return fig, ax
 
-def _matplotlib_to_plotly(cmap, n=256):
-    """
-    Convert a matplotlib colormap to a Plotly colorscale.
-    """
-    return [
-        [i / (n - 1), colors.to_hex(cmap(i / (n - 1)))]
-        for i in range(n)
-    ]
-
 def plot_3D_bathymetry(X, Y, h, show_contour=False, width="single", aspect_ratio=0.6):
-
-
     _, (fig_width_px, fig_height_px) = get_figure_dimensions(width, aspect_ratio)
-    
-    cm_plotly = _matplotlib_to_plotly(palette["cmseq"])
 
     fig = go.Figure(data=[
         go.Surface(
             z=h,
             x=X,
             y=Y,
-            colorscale=cm_plotly,
+            colorscale="deep",
             cmin=np.nanmin(h),
             cmax=np.nanmax(h),
             showscale=False,
@@ -158,7 +145,7 @@ def plot_3D_bathymetry(X, Y, h, show_contour=False, width="single", aspect_ratio
         plot_bgcolor="rgba(0,0,0,0)",
         margin=dict(l=0, r=0, b=0, t=40),
         scene_camera=dict(
-        eye=dict(x=1.1, y=1.1, z=0.7),
+        eye=dict(x=1, y=-1.5, z=0.7),
         center=dict(x=0, y=0, z=-0.2)
     )
     )
@@ -183,8 +170,7 @@ def plot_bathymetry(ax, X, Y, h, contours=None):
     img = ax.imshow(
         Z,
         extent=extent,
-        #origin="lower",
-        cmap=palette["cmseq"],
+        cmap=cmo.deep,
         vmin=np.nanmin(h),
         vmax=np.nanmax(h),
         aspect="auto"

@@ -21,12 +21,12 @@ default_params = Dict(
 
     # Simulation parameters
     "dt" => 4.0,              
-    "tmax" => 4 * 86400.0,        # 16 days in seconds
+    "tmax" => 4 * 86400.0,        # 4 days in seconds
     "outputtime" => 3 * 3600.0,   # 3 hours in seconds
 
     # Forcing parameters
     "tau0" => 0.0001,              # maximum kinematic forcing [m2 s-2]
-    "T" => 4 * 86400.0,            # 16 days in seconds
+    "T" => 4 * 86400.0,            # 4 days in seconds
     "R" => 5e-4,
 
     # Coriolis and gravity
@@ -105,13 +105,9 @@ Ny = Int(Ly / dy)
 
 # Define bathymetry
 function h_i(x, y, p)
-    if y > (p.yc - p.W)                # slope 
-        steepness = (sech.(pi * (y - p.yc) / p.W).^2)
-        delta = p.Acorr * sin.(2 * pi * x / p.lam) * steepness
-        h = p.Hsh + 0.5 * (p.Hbs - p.Hsh) * (1 + tanh.(pi * (p.yc - y - delta) / p.W))
-    else                               # central basin
-        h = p.Hbs
-    end
+    steepness = (sech.(pi * (y - p.yc) / p.W).^2)
+    delta = p.Acorr * sin.(2 * pi * x / p.lam) * steepness
+    h = p.Hsh + 0.5 * (p.Hbs - p.Hsh) * (1 + tanh.(pi * (y - p.yc - delta) / p.W))
     return h
 end
 
