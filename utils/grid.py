@@ -111,14 +111,14 @@ def depth_following_grid(ds, H_targets, N_points=120):
     """
     Construct a depth-following grid aligned with contours of bathymetry.
 
-    For each target depth in `H_targets`, this function extracts a horizontal contour 
+    For each target depth in `H_targets`, this function extracts a constant depth contour 
     from the bathymetry field and samples it uniformly in arc length. It then computes 
     unit tangent vectors and segment lengths along each contour.
 
     Args:
         ds (xr.Dataset): Dataset containing coordinates `xC`, `yC`, and a 2D bathymetry variable `bath`.
         H_targets (array-like): List or array of target depths (in the same units as `bath`) 
-                                at which to extract horizontal contours.
+                                at which to extract depth contours.
         N_points (int, optional): Number of equally spaced points to sample along each contour. Default is 120.
 
     Returns:

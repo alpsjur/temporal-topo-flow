@@ -27,7 +27,7 @@ def generate_sinusoidal_depthfollowing_forcing(params):
     u_tan = np.where(mag < threshold, 1.0, dh_dy / mag)
     v_tan = np.where(mag < threshold, 0.0, dh_dx / mag)
 
-    # Time-dependent amplitude
+    # Time-dependent amplitude of forcing
     amplitude = tau0 * np.sin(2 * np.pi * time / T)
 
     tau_x = amplitude[:, None, None] * u_tan[None, :, :]

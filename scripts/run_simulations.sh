@@ -12,8 +12,8 @@ mkdir -p output/raw
 # Define the filename variable
 FILENAME="scripts/simulation.jl"
 
-SUCSESS="Skript ferdig! :) \n\nHilsen\n$(hostname)"
-FAIL="Oi, nå har det skjedd noe galt. Skript feila :( \nDet går bra, dette fikser du! \n\nHilsen\n$(hostname)"
+SUCSESS="Skript done! :) \n\nBest,\n$(hostname)"
+FAIL="Something went wrong with the script :( No worries, you'll fix this \n\nBest\n$(hostname)"
 
 
 for CONFIG in configs/*
