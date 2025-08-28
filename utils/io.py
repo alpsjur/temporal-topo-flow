@@ -7,6 +7,15 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from utils.bathymetry import generate_bathymetry
 from utils.forcing import generate_forcing
 
+def ensure_dir(directory_path: str):
+    """
+    Ensure that a directory exists. If it does not, create it.
+    """
+    path = Path(directory_path)
+    if not path.exists():
+        path.mkdir(parents=True, exist_ok=True)
+        print(f"Directory created: {path}")
+
 
 def read_raw_output(params):
     """
@@ -66,3 +75,47 @@ def read_raw_output(params):
     ds = ds.drop_vars([v for v in ["zC", "zF"] if v in ds])
 
     return ds
+
+def save_processed_ds(ds, params, onH=False):
+    """
+    Save an xarray dataset of processed results to NetCDF format.
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+        The dataset to save.
+    params : dict
+        Dictionary of parameters containing:
+            - "filepath": base path where simulation outputs are stored.
+            - "name": configuration name.
+    onH : bool, optional
+        If True, save the dataset in a "depth-following" subdirectory
+        with a `_depth-following.nc` suffix.
+        If False (default), save in a "cartesian" subdirectory
+        with a `_cartesian.nc` suffix.
+
+    Notes
+    -----
+    - The function ensures that the appropriate output directory exists
+      before attempting to save.
+    """
+
+    if onH:
+        # Ensure depth-following directory exists
+        ensure_dir(params["filepath"] + "processed/depth-following/")
+        # Build output filename for depth-following dataset
+        output_name = (
+            params["filepath"] + "processed/depth-following/" 
+            + params["name"] + "_depth-following.nc"
+        )
+    else:
+        # Ensure cartesian directory exists
+        ensure_dir(params["filepath"] + "processed/cartesian/")
+        # Build output filename for cartesian dataset
+        output_name = (
+            params["filepath"] + "processed/cartesian/" 
+            + params["name"] + "_cartesian.nc"
+        )
+    
+    # Save dataset to NetCDF file
+    ds.to_netcdf(output_name)

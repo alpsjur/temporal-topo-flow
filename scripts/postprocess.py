@@ -8,7 +8,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from utils.grid import prepare_dsH
 from utils.config import load_config
-from utils.io import read_raw_output
+from utils.io import read_raw_output, save_processed_ds
 
 
 # read simulation output
@@ -17,12 +17,10 @@ ds = read_raw_output(params)
 
 
 ### H contour postprocessing  ###
-H_targets = ds.bath.mean("xC").values
+H_targets = ds.bath.mean("yC").values
 dsH = prepare_dsH(ds, params, H_targets)
 
-
-
-print(dsH)
+save_processed_ds(dsH, params, onH=True)
 
 
 
