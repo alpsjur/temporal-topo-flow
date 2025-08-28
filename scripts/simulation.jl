@@ -98,20 +98,10 @@ Hbs = params["Hbs"]
 Acorr = params["Acorr"]
 lam = params["lam"]
 
-# Parameters based on provided configuration
+# Derived parameters
 omega = 2 * pi / T
 Nx = Int(Lx / dx)
 Ny = Int(Ly / dy)
-
-# Define bathymetry
-function h_i(x, y, p)
-    steepness = (sech.(pi * (y - p.yc) / p.W).^2)
-    delta = p.Acorr * sin.(2 * pi * x / p.lam) * steepness
-    h = p.Hsh + 0.5 * (p.Hbs - p.Hsh) * (1 + tanh.(pi * (y - p.yc - delta) / p.W))
-    return h
-end
-
-
 
 # Create grid
 grid = RectilinearGrid(architecture,
@@ -121,9 +111,38 @@ grid = RectilinearGrid(architecture,
 
 
 
-# Define bathymetry functions
+# Define default bathymetry
+function h_i(x, y, p)
+    steepness = (sech.(pi * (y - p.yc) / p.W).^2)
+    delta = p.Acorr * sin.(2 * pi * x / p.lam) * steepness
+    h = p.Hsh + 0.5 * (p.Hbs - p.Hsh) * (1 - tanh.(pi * (y - p.yc - delta) / p.W))
+    return h
+end
+
+# Define default bathymetry function with provided parameters
 h_i_func(x, y) = h_i(x, y, (; yc, W, Hsh, Hbs, Acorr, lam))
 b_func(x, y) = -h_i_func(x, y)
+
+# Set initial conditions
+# Initial conditions are taken from bathymetry file if provided
+# else, the default bathymetry defined above is used
+h_from_file = haskey(params, "bathymetry_file")
+if h_from_file
+    h_file = params["bathymetry_file"]
+    @info "Loading bathymetry file: $h_file"
+
+    ds = Dataset(h_file)
+
+    # Ensure forcing data is a Float64 array
+    h_data = convert(Array{Float64, 2}, coalesce.(ds["h"][:, :], NaN))
+
+    bathymetry = - h_data
+    h_initial = h_data
+else    
+    @info "No bathymetry file specified. Running with default bathymetry."
+    bathymetry = b_func
+    h_initial = h_i_func
+end
 
 
 # === Load Forcing Data if Available === #
@@ -205,26 +224,6 @@ end
 
 
 # === Define Model === #
-# Set initial conditions
-h_from_file = haskey(params, "bathymetry_file")
-if h_from_file
-    h_file = params["bathymetry_file"]
-    @info "Loading bathymetry file: $h_file"
-
-    ds = Dataset(h_file)
-
-    # Ensure forcing data is a Float64 array
-    h_data = convert(Array{Float64, 2}, coalesce.(ds["h"][:, :], NaN))
-
-    bathymetry = - h_data
-    h_initial = h_data
-else    
-    @info "No bathymetry file specified. Running with default bathymetry."
-    bathymetry = b_func
-    h_initial = h_i_func
-end
-
-
 coriolis = FPlane(f=params["f"])
 model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration=params["gravitational_acceleration"],
                           momentum_advection=VectorInvariant(),

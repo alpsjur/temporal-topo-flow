@@ -14,7 +14,7 @@ def bathymetry_xy(x, y, p):
     """
     steepness = 1 / np.cosh(np.pi * (y - p["yc"]) / p["W"])**2
     delta = p["Acorr"] * np.sin(2 * np.pi * x / p["lam"]) * steepness
-    h = p["Hsh"] + 0.5 * (p["Hbs"] - p["Hsh"]) * (1 + np.tanh(np.pi * (y - p["yc"] - delta) / p["W"]))
+    h = p["Hsh"] + 0.5 * (p["Hbs"] - p["Hsh"]) * (1 - np.tanh(np.pi * (y - p["yc"] - delta) / p["W"]))
 
     return h
 
