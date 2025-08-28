@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import matplotlib.gridspec as gridspec
 from matplotlib.colors import Normalize
+from cmcrameri import cm as cmc
 
 from utils import load_parameters, load_dataset, truncate_time_series, calculate_bathymetry
 
@@ -108,17 +109,19 @@ cbar2 = fig.colorbar(omega_plot, ax=ax2, orientation='vertical', label='[s$^{-1}
 # Plot 3: Eta
 eta_vmin, eta_vmax = np.percentile(eta[1:], [1, 99])
 eta_plot = ax3.imshow(eta[0], extent=[x.min(), x.max(), y.min(), y.max()],
-                      origin='lower', aspect='equal', cmap='viridis',
-                      vmin=eta_vmin, vmax=eta_vmax)
+                      origin='lower', aspect='equal', cmap=cmc.roma_r,
+                      #vmin=eta_vmin, vmax=eta_vmax
+                      vmin=-0.01, vmax=0.01
+                      )
 ax3.contour(x, y, bath, colors='k', linewidths=0.5)
 ax3.set_title("Sea Surface Height η")
 ax3.set_xlabel("x [km]")
 ax3.set_ylabel("y [km]")
-cbar3 = fig.colorbar(eta_plot, ax=ax3, orientation='vertical', label='[m]')
+cbar3 = fig.colorbar(eta_plot, ax=ax3, orientation='vertical', label='[m]', extend="both")
 
 # Plot 4: Eta perturbation
 etap_plot = ax4.imshow(etap[0], extent=[x.min(), x.max(), y.min(), y.max()],
-                       origin='lower', aspect='equal', cmap='cividis',
+                       origin='lower', aspect='equal', cmap=cmc.roma_r,#'cividis',
                        vmin=h_vmin, vmax=h_vmax)
 ax4.contour(x, y, bath, colors='k', linewidths=0.5)
 ax4.set_title("SSH Perturbation η'")
