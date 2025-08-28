@@ -104,29 +104,88 @@ def create_figure(width="single", aspect_ratio=0.6, **kwargs):
     fig, ax = plt.subplots(figsize=(fig_width_in, fig_height_in), **kwargs)
     return fig, ax
 
-def plot_3D_bathymetry(X, Y, h, show_contour=False, width="single", aspect_ratio=0.6):
+def plot_3D_bathymetry(
+    X, Y, h, contours,
+    show_contour=False,
+    width="single",
+    aspect_ratio=0.6,
+    contour_eps="auto",          # small z offset to avoid Z-fighting
+    resample_factor=1            # >1 to upsample for smoother contour extraction
+):
+    """
+    Plot a 3D bathymetry surface with optional thick contour overlays.
+
+    Parameters
+    ----------
+    X, Y : 1D or 2D arrays
+    h : 2D array
+    contours : sequence of floats
+        Exact z-levels to overlay as contours.
+    show_contour : bool
+    contour_eps : float or "auto"
+        Small offset added to contour z (level - eps) to avoid Z-fighting.
+        If "auto", uses ~1e-3 of data range.
+    resample_factor : int
+        If >1, upsample X, Y, h for smoother contour extraction.
+    """
+    from scipy.ndimage import zoom
+    
     _, (fig_width_px, fig_height_px) = get_figure_dimensions(width, aspect_ratio)
+
+    # Ensure 2D grids
+    if np.ndim(X) == 1 and np.ndim(Y) == 1:
+        Xg, Yg = np.meshgrid(X, Y, indexing="xy")
+    else:
+        Xg, Yg = X, Y
+
+    h_arr = np.array(h, dtype=float)
+    cmin, cmax = np.nanmin(h_arr), np.nanmax(h_arr)
 
     fig = go.Figure(data=[
         go.Surface(
-            z=h,
-            x=X,
-            y=Y,
+            z=h_arr,
+            x=Xg,
+            y=Yg,
             colorscale="deep",
-            cmin=np.nanmin(h),
-            cmax=np.nanmax(h),
+            cmin=cmin, cmax=cmax,
             showscale=False,
             lighting=dict(ambient=0.5, diffuse=0.8, roughness=0.5),
-            contours_z=dict(
-                show=show_contour,
-                color=palette["accent1"],
-                width=6,
-                start=500,
-                end=501,
-                size=20
-            )
+            contours_z=dict(show=False)  # we'll overlay our own
         )
     ])
+
+    if show_contour and len(contours) > 0:
+        # Optional upsampling
+        if resample_factor and resample_factor > 1:
+            zy, zx = resample_factor, resample_factor
+            h_arr = zoom(h_arr, (zy, zx), order=1)
+            Xg = zoom(Xg, (zy, zx), order=1)
+            Yg = zoom(Yg, (zy, zx), order=1)
+
+        # Small offset to avoid Z-fighting
+        if contour_eps == "auto":
+            eps = max(1e-6, (cmax - cmin) * 1e-3)
+        else:
+            eps = float(contour_eps)
+
+        # Extract contours with Matplotlib
+        cs = plt.contour(Xg, Yg, h_arr, levels=np.asarray(contours, dtype=float))
+
+        for level, coll in zip(cs.levels, cs.collections):
+            for path in coll.get_paths():
+                v = path.vertices  # (N, 2) with [x, y]
+                if v.shape[0] < 2:
+                    continue
+                fig.add_trace(go.Scatter3d(
+                    x=v[:, 0],
+                    y=v[:, 1],
+                    z=np.full(v.shape[0], level - eps),
+                    mode="lines",
+                    line=dict(width=10, color=palette["accent1"]),
+                    hoverinfo="skip",
+                    showlegend=False
+                ))
+        plt.close()
 
     fig.update_layout(
         font=dict(color=palette["text"], size=16),
@@ -135,9 +194,11 @@ def plot_3D_bathymetry(X, Y, h, show_contour=False, width="single", aspect_ratio
         scene=dict(
             xaxis=dict(title="x (km)", color=palette["text"], gridcolor=palette["text"]),
             yaxis=dict(title="y (km)", color=palette["text"], gridcolor=palette["text"]),
-            zaxis=dict(title="Depth (m)", autorange="reversed",
-                       color=palette["text"], gridcolor=palette["text"],
-                       range=[0, np.nanmax(h) * 1.1], nticks=5),
+            zaxis=dict(
+                title="Depth (m)", autorange="reversed",
+                color=palette["text"], gridcolor=palette["text"],
+                range=[0, cmax * 1.1], nticks=5
+            ),
             aspectmode="manual",
             aspectratio=dict(x=1, y=1, z=aspect_ratio)
         ),
@@ -145,11 +206,10 @@ def plot_3D_bathymetry(X, Y, h, show_contour=False, width="single", aspect_ratio
         plot_bgcolor="rgba(0,0,0,0)",
         margin=dict(l=0, r=0, b=0, t=40),
         scene_camera=dict(
-        eye=dict(x=1, y=-1.5, z=0.7),
-        center=dict(x=0, y=0, z=-0.2)
+            eye=dict(x=1.2, y=1.2, z=0.7),
+            center=dict(x=0, y=0, z=-0.2)
+        )
     )
-    )
-
     return fig
 
 def plot_bathymetry(ax, X, Y, h, contours=None):
