@@ -47,3 +47,4 @@ input/
 # exploratory stuff
 slope/*
 slope
+configs/run*
