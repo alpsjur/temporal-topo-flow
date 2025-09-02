@@ -59,18 +59,31 @@ def overwrite_config(file_path, default_params):
         print(f"Error parsing JSON file '{file_path}': {e}")
     return default_params
 
-def load_config():
+def load_config(config_path=None):
     """
-    Load simulation parameters either from a provided JSON file 
-    (via command-line argument) or from default values.
+    Load simulation parameters from a given JSON file, 
+    from the command-line argument, or fall back to defaults.
+
+    Priority:
+    1. Explicit config_path argument
+    2. sys.argv[1] if provided
+    3. default_params
+
+    Args:
+        config_path (str, optional): Path to a JSON config file.
 
     Returns:
         dict: Dictionary of simulation parameters.
     """
-    if len(sys.argv) == 2:
+    if config_path is not None:
+        print(f"Loading configuration from {config_path}")
+        return overwrite_config(config_path, default_params)
+
+    elif len(sys.argv) > 1:
         config_path = sys.argv[1]
         print(f"Loading configuration from {config_path}")
         return overwrite_config(config_path, default_params)
+
     else:
         print("No configuration file provided. Using default parameters.")
         return default_params
