@@ -40,6 +40,9 @@ def extract_uniform_contour(bath, x, y, H_target, N_points):
 
     # Choose the longest contour
     contour = max(contours, key=len)
+    
+    # Contour start to the far right, so we need to revert it
+    contour = contour[::-1]
 
     # Convert from index space to physical coordinates
     y_contour = np.interp(contour[:, 1], np.arange(len(y)), y)

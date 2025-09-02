@@ -62,7 +62,7 @@ def windforcing(t, params):
     t_hr = np.arange(0, len(t) * outputtime, dt)
     window = round(outputtime / dt)
 
-    windforce_hr = -tau0 * np.sin(omega * t_hr) 
+    windforce_hr = tau0 * np.sin(omega * t_hr) 
     forcing = windforce_hr.reshape(-1, window).mean(axis=1)
 
     return forcing

@@ -41,7 +41,7 @@ def read_raw_output(params):
             - 'forcing_x' and 'forcing_y' (3D arrays on ["time", "yC", "xC"])
     """
     # Load raw model output
-    ds = xr.open_dataset(params["filepath"] + "raw/" + params["name"] + ".nc").squeeze()
+    ds = xr.open_dataset("/itf-fi-ml/home/alsjur/temporal-topo-flow/"+params["filepath"] + "raw/" + params["name"] + ".nc").squeeze()
 
     # Load or generate bathymetry
     if "bathymetry_file" in params:
@@ -51,7 +51,7 @@ def read_raw_output(params):
         ds["bath"] = bath_ds["bath"]
     else:
         X, Y, bath = generate_bathymetry(params)
-        ds["bath"] = (["yC", "xC"], bath)
+        ds["bath"] = (["xC", "yC"], bath)
 
     # Load or generate forcing
     if "forcing_file" in params:
@@ -118,4 +118,4 @@ def save_processed_ds(ds, params, onH=False):
         )
     
     # Save dataset to NetCDF file
-    ds.to_netcdf(output_name)
+    ds.to_netcdf(output_name, mode="w")
