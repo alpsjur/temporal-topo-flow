@@ -232,37 +232,45 @@ model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration=params["g
                           forcing=(u=forcing_u, v=forcing_v))
 set!(model, h=h_initial)
 
-# TODO remove plotting 
-# Plot bathymetry
-using CairoMakie 
-figurepath = "figures/bathymetry/"
-fig = Figure(size=(800, 800))
-axis = Axis(fig[1, 1], 
-            aspect=DataAspect(),
-            title="Model bathymetry",
-            xlabel="x [m]",
-            ylabel="y [m]")
 
-depth = model.solution.h   
-hm = heatmap!(axis, depth, colormap=:deep)
-Colorbar(fig[1, 2], hm, label="Depth [m]")
-save(figurepath * runname * "-bathymetry.png", fig)
+# # TODO remove plotting 
+# # Plot bathymetry
+# using CairoMakie 
+# figurepath = "figures/bathymetry/"
+# fig = Figure(size=(800, 800))
+# axis = Axis(fig[1, 1], 
+#             aspect=DataAspect(),
+#             title="Model bathymetry",
+#             xlabel="x [m]",
+#             ylabel="y [m]")
+
+# depth = model.solution.h   
+# hm = heatmap!(axis, depth, colormap=:deep)
+# Colorbar(fig[1, 2], hm, label="Depth [m]")
+# save(figurepath * runname * "-bathymetry.png", fig)
 
 
 # Initialize simulation
 simulation = Simulation(model, Δt=dt, stop_time=tmax)
 
+# adaptive time step 
+wizard = TimeStepWizard(cfl=0.2, max_Δt=dt)
+simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(8))
+
 # Logging simulation progress
 start_time = time_ns()
 progress(sim) = @printf(
-    "i: %6d, sim time: % 12s, wall time: %12s\n",
+    "i: %6d, sim time: % 12s, wall time: %12s, Δt: %4s\n",
     sim.model.clock.iteration,
     prettytime(sim.model.clock.time),
     #minimum(sim.model.solution.v),
     #maximum(sim.model.solution.v),
-    prettytime(1e-9 * (time_ns() - start_time)))
+    prettytime(1e-9 * (time_ns() - start_time)),
+    sim.Δt
+    )
+    
 
-simulation.callbacks[:progress] = Callback(progress, IterationInterval(20days / dt))
+simulation.callbacks[:progress] = Callback(progress, IterationInterval(10days / dt))
 
 # Output
 u, v, h = model.solution
