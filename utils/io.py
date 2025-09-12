@@ -1,6 +1,8 @@
 import xarray as xr
 import sys
 from pathlib import Path
+import numpy as np
+import pandas as pd
 
 # Add project root to sys.path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
@@ -45,25 +47,67 @@ def read_raw_output(params):
 
     # Load or generate bathymetry
     if "bathymetry_file" in params:
-        bath_ds = xr.open_dataset(params["bathymetry_file"])
+        bath_ds = xr.open_dataset("/itf-fi-ml/home/alsjur/temporal-topo-flow/"+params["bathymetry_file"])
         if "bath" not in bath_ds:
             raise ValueError(f"Bathymetry file '{params['bathymetry_file']}' does not contain a 'bath' variable.")
         ds["bath"] = bath_ds["bath"]
     else:
         X, Y, bath = generate_bathymetry(params)
-        ds["bath"] = (["xC", "yC"], bath)
+        ds["bath"] = (["yC", "xC"], bath)
 
     # Load or generate forcing
     if "forcing_file" in params:
-        forcing_ds = xr.open_dataset(params["forcing_file"])
+        f = xr.open_dataset("/itf-fi-ml/home/alsjur/temporal-topo-flow/" + params["forcing_file"])
 
-        # Interpolate forcing onto model output time
-        forcing_interp = forcing_ds.interp(time=ds.time, method="linear")
+        # 1) rename x/y -> xC/yC (your generator uses x,y)
+        if ("x" in f.dims) or ("x" in f.coords): f = f.rename({"x": "xC"})
+        if ("y" in f.dims) or ("y" in f.coords): f = f.rename({"y": "yC"})
 
+        # 2) ensure variable dims are (time, yC, xC) to match the model
+        for v in ["forcing_x", "forcing_y"]:
+            if v in f and tuple(f[v].dims) != ("time", "yC", "xC"):
+                # most likely ("time","xC","yC") from your writer — just transpose
+                wanted = ("time", "yC", "xC")
+                have = f[v].dims
+                if set(have) == set(wanted):
+                    f[v] = f[v].transpose(*wanted)
+                else:
+                    raise ValueError(f"{v} has unexpected dims {have}; expected {wanted} (any order ok).")
+
+        # 3) make forcing time timedelta64[ns] (your writer used numeric seconds)
+        import pandas as pd
+        t_f = f["time"]
+        if np.issubdtype(t_f.dtype, np.timedelta64):
+            f = f.assign_coords(time=t_f.astype("timedelta64[ns]"))
+        elif np.issubdtype(t_f.dtype, np.datetime64):
+            f = f.assign_coords(time=(t_f - t_f.isel(time=0)).astype("timedelta64[ns]"))
+        else:
+            # numeric -> seconds by your generator; adjust if you ever change units
+            f = f.assign_coords(time=xr.DataArray(pd.to_timedelta(t_f.values, unit="s"), dims="time"))
+
+        # 4) make model time timedelta64[ns] as well
+        t_ds = ds["time"]
+        if np.issubdtype(t_ds.dtype, np.timedelta64):
+            t_model = t_ds.astype("timedelta64[ns]")
+        elif np.issubdtype(t_ds.dtype, np.datetime64):
+            t_model = (t_ds - t_ds.isel(time=0)).astype("timedelta64[ns]")
+        else:
+            t_model = xr.DataArray(pd.to_timedelta(t_ds.values, unit=params.get("model_time_unit", "s")), dims="time")
+
+        # 5) align horizontally if grids differ (nearest to avoid smoothing)
+        if "xC" in f.coords and "xC" in ds.coords and not np.array_equal(f["xC"], ds["xC"]):
+            f = f.interp(xC=ds["xC"], method="nearest")
+        if "yC" in f.coords and "yC" in ds.coords and not np.array_equal(f["yC"], ds["yC"]):
+            f = f.interp(yC=ds["yC"], method="nearest")
+
+        # 6) interpolate in time
+        f = f.interp(time=t_model, method="linear")
+
+        # 7) attach
         for key in ["forcing_x", "forcing_y"]:
-            if key not in forcing_interp:
-                raise ValueError(f"Variable '{key}' not found in forcing file: {params['forcing_file']}")
-            ds[key] = forcing_interp[key]
+            if key not in f:
+                raise ValueError(f"'{key}' not found in forcing file: {params['forcing_file']}")
+            ds[key] = f[key]
     else:
         forcing = generate_forcing(params) 
         for key in ["forcing_x", "forcing_y"]:
