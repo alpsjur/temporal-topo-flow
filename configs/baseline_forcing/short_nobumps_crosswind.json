@@ -2,5 +2,6 @@
     "name": "short_nobumps_crosswind",    
     "T": 1382400.0,
     "tmax": 16588800,
+    "Acorr" : 0,
     "forcing_file": "input/forcing/short_nobumps_crosswind_forcing.nc" 
 }

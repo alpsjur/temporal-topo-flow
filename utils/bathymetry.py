@@ -40,7 +40,9 @@ def generate_bathymetry(p, full=False):
     else:
         x = np.arange(p["dx"]/2, p["Lx"], p["dx"])
         y = np.arange(p["dy"]/2, p["Ly"], p["dy"])
-    X, Y = np.meshgrid(x, y, indexing="ij")
+    X, Y = np.meshgrid(x, y
+                       #, indexing="xy"
+                       )
 
     h_func = np.vectorize(lambda x, y: bathymetry_xy(x, y, p))
     h = h_func(X, Y)
@@ -68,8 +70,8 @@ def bathymetry_gradient(h, dx, dy):
 
     # Standard centered differences in y (axis=0, non-periodic)
     dh_dy = np.empty_like(h)
-    dh_dy[1:-1, :] = (h[2:, :] - h[:-2, :]) / (2 * dy)
-    dh_dy[0, :] = (h[1, :] - h[0, :]) / dy           # Forward difference at lower boundary
-    dh_dy[-1, :] = (h[-1, :] - h[-2, :]) / dy        # Backward difference at upper boundary
+    dh_dy[1:-1,:] = (h[2:,:] - h[:-2,:]) / (2 * dy)
+    dh_dy[0, :] = (h[1,:] - h[0,:]) / dy           # Forward difference at lower boundary
+    dh_dy[-1, :] = (h[-1,:] - h[-2,:]) / dy        # Backward difference at upper boundary
 
     return dh_dx, dh_dy

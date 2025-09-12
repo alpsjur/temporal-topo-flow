@@ -17,7 +17,7 @@ def main():
     # NOTE: Forcing is intentionally generated using `default_params` with bumps,
     # even if the actual simulation uses a smooth or different bathymetry.
     # This creates a cross-slope component in the forcing. 
-    ds = generate_sinusoidal_depthfollowing_forcing(default_params)
+    ds = generate_sinusoidal_depthfollowing_forcing(default_params, params)
 
     outpath = f"input/forcing/{config}_forcing.nc"
     ds.to_netcdf(outpath)

@@ -14,56 +14,58 @@ from utils.config import default_params
 def extract_uniform_contour(bath, x, y, H_target, N_points):
     """
     Extract a depth contour at a target depth and resample it to uniform arclength.
-    If no contour is found (e.g., flat bathymetry), return a horizontal line.
+
+    Assumptions:
+      - bath has shape (Ny, Nx): rows correspond to y, columns to x.
+      - x is length Nx (columns), y is length Ny (rows).
 
     Args:
         bath (2D ndarray): Bathymetry array of shape (Ny, Nx).
-        x (1D ndarray): x-coordinates corresponding to axis 1 of `bath`.
-        y (1D ndarray): y-coordinates corresponding to axis 0 of `bath`.
+        x (1D ndarray): x-coordinates corresponding to axis 1 (columns) of `bath`.
+        y (1D ndarray): y-coordinates corresponding to axis 0 (rows) of `bath`.
         H_target (float): Target depth at which to extract the contour.
         N_points (int): Number of points to sample uniformly along the contour.
 
     Returns:
-        Tuple[ndarray, ndarray, ndarray]: A tuple (x_uniform, y_uniform, ds) where:
-            - x_uniform (1D ndarray): x-coordinates of the uniform contour.
-            - y_uniform (1D ndarray): y-coordinates of the uniform contour.
+        Tuple[ndarray, ndarray]: (x_uniform, y_uniform)
     """
-    # Find contours at the specified depth level
+    # 1) Extract all isocontours at level H_target
     contours = measure.find_contours(bath, level=H_target)
+
     if not contours:
-        # No contour found – return a straight line
+        # Fallback: straight horizontal line at the y whose mean depth is closest to target
         x_uniform = np.linspace(x[0], x[-1], N_points)
-        y_level = y[np.argmin(np.abs(np.mean(bath, axis=1) - H_target))]
+        y_level = y[np.argmin(np.abs(np.mean(bath, axis=1) - H_target))]  # mean over x (axis=1)
         y_uniform = np.full_like(x_uniform, y_level)
-        
         return x_uniform, y_uniform
 
-    # Choose the longest contour
+    # 2) Choose the longest contour
     contour = max(contours, key=len)
-    
-    # Contour start to the far right, so we need to revert it
-    contour = contour[::-1]
 
-    # Convert from index space to physical coordinates
-    y_contour = np.interp(contour[:, 1], np.arange(len(y)), y)
-    x_contour = np.interp(contour[:, 0], np.arange(len(x)), x)
+    # Optional: reverse so that x increases on average (purely cosmetic)
+    if contour[0,1] > contour[-1,1]:
+        contour = contour[::-1]
 
-    if len(x_contour) < len(x):
-        # Degenerate case – fallback to straight line
+    # 3) Convert from index-space (row=y_idx, col=x_idx) to physical coords
+    #    NOTE: this is the crucial fix (no swapping):
+    x_contour = np.interp(contour[:, 1], np.arange(len(x)), x)  # col -> x
+    y_contour = np.interp(contour[:, 0], np.arange(len(y)), y)  # row -> y
+
+    # 4) Degenerate safeguard (very short contour)
+    if len(x_contour) < 4:
         x_uniform = np.linspace(x[0], x[-1], N_points)
         y_level = y[np.argmin(np.abs(np.mean(bath, axis=1) - H_target))]
         y_uniform = np.full_like(x_uniform, y_level)
-
         return x_uniform, y_uniform
 
-    # Arclength along the contour
-    s_raw = np.insert(np.cumsum(np.sqrt(np.diff(x_contour)**2 + np.diff(y_contour)**2)), 0, 0)
-    s_uniform = np.linspace(s_raw[0], s_raw[-1], N_points)
+    # 5) Reparameterize by arclength and resample uniformly
+    ds = np.hypot(np.diff(x_contour), np.diff(y_contour))
+    s_raw = np.insert(np.cumsum(ds), 0, 0.0)
+    s_uniform = np.linspace(0.0, s_raw[-1], N_points)
 
-    # Interpolate along arclength
-    x_interp = interp1d(s_raw, x_contour, kind='cubic')
-    y_interp = interp1d(s_raw, y_contour, kind='cubic')
-
+    # Use linear by default; cubic can overshoot for wiggly paths
+    x_interp = interp1d(s_raw, x_contour, kind="linear")
+    y_interp = interp1d(s_raw, y_contour, kind="linear")
     x_uniform = x_interp(s_uniform)
     y_uniform = y_interp(s_uniform)
 
