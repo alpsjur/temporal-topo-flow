@@ -1,5 +1,6 @@
 import json
 import sys
+import copy
 
 default_params = {
     # Run name and output path
@@ -36,28 +37,32 @@ default_params = {
 }
 
 
-def overwrite_config(file_path, default_params):
+def update_config(file_path, default_params):
     """
-    Load configuration from a JSON file and overwrite the default parameters.
+    Load configuration from a JSON file and apply overrides 
+    to a copy of the default parameters.
 
-    Only keys present in the file will be used to overwrite values in `default_params`.
+    Only keys present in the file will be used to overwrite 
+    values in the copy. The original `default_params` remains unchanged.
 
     Args:
         file_path (str): Path to the JSON configuration file.
         default_params (dict): Dictionary of default parameter values.
 
     Returns:
-        dict: Updated parameters dictionary with file overrides applied.
+        dict: New parameters dictionary with file overrides applied.
     """
+    params = copy.deepcopy(default_params)  # Make a safe copy
     try:
         with open(file_path, 'r') as file:
             config = json.load(file)
-            default_params.update(config)  # Overwrite defaults with values from the config
+            params.update(config)  # Update the copy
     except FileNotFoundError:
         print(f"Warning: Configuration file '{file_path}' not found. Using default parameters.")
     except json.JSONDecodeError as e:
         print(f"Error parsing JSON file '{file_path}': {e}")
-    return default_params
+    return params
+
 
 def load_config(config_path=None):
     """
@@ -77,13 +82,12 @@ def load_config(config_path=None):
     """
     if config_path is not None:
         print(f"Loading configuration from {config_path}")
-        return overwrite_config(config_path, default_params)
+        return update_config(config_path, default_params)
 
     elif len(sys.argv) > 1:
         config_path = sys.argv[1]
         print(f"Loading configuration from {config_path}")
-        return overwrite_config(config_path, default_params)
+        return update_config(config_path, default_params)
 
     else:
         print("No configuration file provided. Using default parameters.")
-        return default_params
