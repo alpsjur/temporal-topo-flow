@@ -21,10 +21,10 @@ temporal-topo-flow/
 │  │  ├─ brink_2010.jl          # Run SW model & save output
 │  │  ├─ plot_brink_fig2.jl     # Recreate Fig. 2
 │  │  └─ plot_brink_fig3.jl     # Recreate Fig. 3
-│  ├─ figures/                  # Generated figures (png)
-│  └─ output/                   # Example output (.jld2)
-├─ scripts/                     # CLI utilities for experiments (WIP)
-├─ utils/                       # Shared helper functions (WIP)
+│  ├─ figures/                  # Generated figures 
+│  └─ output/                   # Example output
+├─ scripts/                     # utilities for experiments, including the simulation setup in "simulations.jl"
+├─ utils/                       # Shared helper functions
 ├─ Project.toml                 # Julia project manifest (dependencies)
 └─ README.md
 ```
@@ -34,8 +34,6 @@ temporal-topo-flow/
 ### Requirements
 - **Julia:** 1.10+ recommended
 - **Packages:** managed via `Project.toml` (instantiated automatically)
-- **Optional:** CUDA toolkit for GPU runs (Oceananigans detects CUDA if available)
-- **Optional (for notebooks):** Jupyter + IJulia
 
 ### 1) Clone the correct branch
 ```bash
