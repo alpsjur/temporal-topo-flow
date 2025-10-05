@@ -40,6 +40,8 @@ default_params = Dict(
     "Hbs" => 100.0,             # Depth of deep basin
     "Acorr" => 10e3,            # Horizontal length scale of corrigations
     "lam" => 45e3,              # Wave length of corriations
+
+    #"wizard_interval" => 4,      # number of time steps between update of timestep
 )
 
 # Function to load and selectively overwrite parameters from JSON
@@ -98,6 +100,8 @@ Hbs = params["Hbs"]
 Acorr = params["Acorr"]
 lam = params["lam"]
 
+#wizard_interval = params["wizard_interval"]
+
 # Derived parameters
 omega = 2 * pi / T
 Nx = Int(Lx / dx)
@@ -151,12 +155,18 @@ if forcing_from_file
     forcing_file = params["forcing_file"]
     @info "Loading forcing file: $forcing_file"
 
+    # NOTE: data is read in with inverted indexing. 
+    # Meaning that indexing is [x,y,time], and not [time, y, x] as in the forcing file
     ds = Dataset(forcing_file)
 
     # Ensure forcing data is a Float64 array
     forcing_x_data = convert(Array{Float64, 3}, coalesce.(ds["forcing_x"][:, :, :], NaN))
     forcing_y_data = convert(Array{Float64, 3}, coalesce.(ds["forcing_y"][:, :, :], NaN))
     time = convert(Vector{Float64}, coalesce.(ds["time"][:], NaN))
+
+    println("Size of forcing_x_data: ", size(forcing_x_data))
+    println("Size of forcing_y_data: ", size(forcing_y_data))
+    println("Size of time: ", size(time))
 
     close(ds)
 
@@ -173,12 +183,12 @@ if forcing_from_file
         # Compute time indices safely using integer division and modulo
         idx = min(unsafe_trunc(Int32, t / p.fdt) + 1, length(p.time)-1)
 
-        # Performinterpolation in time
+        # Perform interpolation in time
         @inbounds begin
             t1 = p.time[idx]
             t2 = p.time[idx+1]
-            f1 = forcing_data[j, i, idx]
-            f2 = forcing_data[j, i, idx+1]
+            f1 = forcing_data[i, j, idx]
+            f2 = forcing_data[i, j, idx+1]
         end
         return f1 + (f2 - f1) * (t - t1) / (t2 - t1)
     end
@@ -253,9 +263,10 @@ set!(model, h=h_initial)
 # Initialize simulation
 simulation = Simulation(model, Δt=dt, stop_time=tmax)
 
-# adaptive time step 
-wizard = TimeStepWizard(cfl=0.2, max_Δt=dt)
-simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(8))
+# # adaptive time step 
+# #wizard = TimeStepWizard(cfl=0.2, max_Δt=dt)
+# #simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(wizard_interval))
+# conjure_time_step_wizard!(simulation, IterationInterval(wizard_interval), cfl=0.2, max_Δt=dt)
 
 # Logging simulation progress
 start_time = time_ns()
@@ -276,6 +287,7 @@ simulation.callbacks[:progress] = Callback(progress, IterationInterval(10days / 
 u, v, h = model.solution
 bath = model.bathymetry
 eta = h + bath
+
 
 uvh = Field(u*v*h)
 #uuh = Field(u*u*h)        # Do I need these?

@@ -66,7 +66,6 @@ def read_raw_output(params):
         # 2) ensure variable dims are (time, yC, xC) to match the model
         for v in ["forcing_x", "forcing_y"]:
             if v in f and tuple(f[v].dims) != ("time", "yC", "xC"):
-                # most likely ("time","xC","yC") from your writer — just transpose
                 wanted = ("time", "yC", "xC")
                 have = f[v].dims
                 if set(have) == set(wanted):
@@ -74,7 +73,7 @@ def read_raw_output(params):
                 else:
                     raise ValueError(f"{v} has unexpected dims {have}; expected {wanted} (any order ok).")
 
-        # 3) make forcing time timedelta64[ns] (your writer used numeric seconds)
+        # 3) make forcing time timedelta64[ns] 
         import pandas as pd
         t_f = f["time"]
         if np.issubdtype(t_f.dtype, np.timedelta64):
@@ -82,7 +81,7 @@ def read_raw_output(params):
         elif np.issubdtype(t_f.dtype, np.datetime64):
             f = f.assign_coords(time=(t_f - t_f.isel(time=0)).astype("timedelta64[ns]"))
         else:
-            # numeric -> seconds by your generator; adjust if you ever change units
+            # numeric -> seconds
             f = f.assign_coords(time=xr.DataArray(pd.to_timedelta(t_f.values, unit="s"), dims="time"))
 
         # 4) make model time timedelta64[ns] as well

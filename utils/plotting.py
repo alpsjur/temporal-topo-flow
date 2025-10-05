@@ -10,10 +10,9 @@ import numpy as np
 figure_dpi = 300
 
 # Standard journal widths in inches
-figure_sizes_in = {
-    "single": 3.5,
-    "1.5col": 5.0,
-    "double": 7.0
+figure_sizes_cm = {
+    "single": 16,
+    "double": 16*1.5
 }
 
 # Article-appropriate color palette
@@ -68,18 +67,21 @@ plt.rcParams.update({
 n = 4
 colorwheel = [palette["cmcat"](i / (n - 1)) for i in range(n)]
 
-def customize_axis(ax):
+def customize_axis(ax, yzero=True, xzero=True):
     # Customize the appearance of the axes
+    
+    # Remove the top spine and corresponding ticks
+    ax.spines['top'].set_color('none')
+    ax.xaxis.tick_bottom()  # Keep the bottom ticks
     ax.spines['right'].set_color('none')  # Remove the right spine
     ax.yaxis.tick_left()  # Keep the left ticks
 
     # Set the position of the bottom and left spines to zero
-    ax.spines['bottom'].set_position('zero')
-    ax.spines['left'].set_position('zero')
+    if yzero:
+        ax.spines['bottom'].set_position('zero')
+    if xzero:
+        ax.spines['left'].set_position('zero')
 
-    # Remove the top spine and corresponding ticks
-    ax.spines['top'].set_color('none')
-    ax.xaxis.tick_bottom()  # Keep the bottom ticks
 
 def get_figure_dimensions(width="single", aspect_ratio=0.6):
     """
@@ -93,11 +95,15 @@ def get_figure_dimensions(width="single", aspect_ratio=0.6):
         (fig_width_in, fig_height_in), (fig_width_px, fig_height_px)
     """
     if isinstance(width, str):
-        fig_width_in = figure_sizes_in.get(width, figure_sizes_in["single"])
+        fig_width_cm = figure_sizes_cm.get(width, figure_sizes_cm["single"])
     else:
-        fig_width_in = float(width)
+        fig_width_cm = float(width)
 
-    fig_height_in = fig_width_in * aspect_ratio
+    fig_height_cm = fig_width_cm * aspect_ratio
+    
+    fig_width_in = int(fig_width_cm / 2.54)
+    fig_height_in = int(fig_height_cm / 2.54)
+    
     fig_width_px = int(fig_width_in * figure_dpi)
     fig_height_px = int(fig_height_in * figure_dpi)
 
@@ -149,10 +155,10 @@ def plot_3D_bathymetry(
         width=fig_width_px,
         height=fig_height_px,
         scene=dict(
-            xaxis=dict(title="x (km)", color=palette["text"], gridcolor=palette["text"]),
-            yaxis=dict(title="y (km)", color=palette["text"], gridcolor=palette["text"]),
+            xaxis=dict(title="x [km]", color=palette["text"], gridcolor=palette["text"]),
+            yaxis=dict(title="y [km]", color=palette["text"], gridcolor=palette["text"]),
             zaxis=dict(
-                title="Depth (m)", autorange="reversed",
+                title="Depth [m]", autorange="reversed",
                 color=palette["text"], gridcolor=palette["text"],
                 range=[0, cmax * 1.1], nticks=5
             ),
@@ -163,7 +169,7 @@ def plot_3D_bathymetry(
         plot_bgcolor="rgba(0,0,0,0)",
         margin=dict(l=0, r=0, b=0, t=40),
         scene_camera=dict(
-            eye=dict(x=1.2, y=1.2, z=0.7),
+            eye=dict(x=-1.2, y=1.2, z=0.7),
             center=dict(x=0, y=0, z=-0.2)
         )
     )
@@ -248,7 +254,7 @@ def plot_bathymetry(ax, X, Y, h):
     """
     ax.set_aspect("equal")
 
-    Z = h.T[::-1]  # transpose and flip y for correct orientation
+    Z = h[::-1]  # transpose and flip y for correct orientation
     extent = [X.min(), X.max(), Y.min(), Y.max()]
 
     img = ax.imshow(
@@ -261,8 +267,8 @@ def plot_bathymetry(ax, X, Y, h):
         aspect="auto"
     )
 
-    ax.set_xlabel("x (km)")
-    ax.set_ylabel("y (km)")
+    ax.set_xlabel("x [km]")
+    ax.set_ylabel("y [km]")
 
     ax.set_xticks(np.linspace(X.min(), X.max(), 4))
     ax.set_yticks(np.linspace(Y.min(), Y.max(), 4))
@@ -344,7 +350,7 @@ def initialize_momentum_diagrams():
     fig = plt.figure(layout="constrained", figsize=(fig_width_in, fig_height_in))
     axd = fig.subplot_mosaic(
         [
-            ["ymean", "tymean"],
+            ["ymean", "legend"],
             ["circ", "tmean"],
         ],
         #empty_sentinel="BLANK",
@@ -356,23 +362,16 @@ def initialize_momentum_diagrams():
 
     axd["tmean"].sharey(axd["circ"])
     axd["ymean"].sharex(axd["circ"])
+    
+    # Hide redundant y-axis labels (since it's shared with 'circ')
+    axd["tmean"].tick_params(labelleft=False)
 
-    axd["tmean"].spines['right'].set_color('none')  # Remove the right spine
-    axd["tmean"].spines['top'].set_color('none')  # Remove the top spine
-    #axd["tmean"].spines['bottom'].set_position('zero')  # Set the bottom spine position
-    axd["tmean"].spines['left'].set_color('lightgray')
-    axd["tmean"].spines['bottom'].set_color('lightgray')
+    # Hide redundant x-axis labels (since it's shared with 'circ')
+    axd["ymean"].tick_params(labelbottom=False)
 
-    axd["tymean"].spines['right'].set_color('none')  # Remove the right spine
-    axd["tymean"].spines['top'].set_color('none')  # Remove the top spine
-    #axd["tymean"].spines['bottom'].set_position('zero')  # Set the bottom spine position
-    axd["tymean"].spines['left'].set_color('lightgray')
-    axd["tymean"].spines['bottom'].set_color('lightgray')
-
-    axd["ymean"].spines['right'].set_color('none')  # Remove the right spine
-    axd["ymean"].spines['top'].set_color('none')  # Remove the top spine
-    #axd["ymean"].spines['left'].set_position('zero')  # Set the bottom spine position
-    axd["ymean"].spines['left'].set_color('lightgray')
-    axd["ymean"].spines['bottom'].set_color('lightgray')
+    customize_axis(axd["tmean"], yzero=False)
+    customize_axis(axd["ymean"])
+    customize_axis(axd["legend"], yzero=False)
+    
     
     return fig, axd

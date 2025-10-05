@@ -40,9 +40,9 @@ def generate_sinusoidal_depthfollowing_forcing(default_params, params):
         {
             "forcing_x": (["time", "y", "x"], tau_x),
             "forcing_y": (["time", "y", "x"], tau_y),
-            "dh_dx" : (["y", "x"], dh_dx),
-            "dh_dy" : (["y", "x"], dh_dy),
-            "h" : (["y", "x"], h),
+            #"dh_dx" : (["y", "x"], dh_dx),
+            #"dh_dy" : (["y", "x"], dh_dy),
+            #"h" : (["y", "x"], h),
         },
         coords={"time": time, "x": X[0, :], "y": Y[:, 0]}
     )
