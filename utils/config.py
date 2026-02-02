@@ -42,7 +42,7 @@ def update_config(file_path, default_params):
     Load configuration from a JSON file and apply overrides 
     to a copy of the default parameters.
 
-    Only keys present in the file will be used to overwrite 
+    Only keys present in the config file will be used to overwrite 
     values in the copy. The original `default_params` remains unchanged.
 
     Args:
@@ -66,7 +66,7 @@ def update_config(file_path, default_params):
 
 def load_config(config_path=None):
     """
-    Load simulation parameters from a given JSON file, 
+    Load simulation parameters from either a given JSON file, 
     from the command-line argument, or fall back to defaults.
 
     Priority:

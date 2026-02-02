@@ -29,7 +29,7 @@ def extract_uniform_contour(bath, x, y, H_target, N_points):
     Returns:
         Tuple[ndarray, ndarray]: (x_uniform, y_uniform)
     """
-    # 1) Extract all isocontours at level H_target
+    # Extract all isocontours at level H_target
     contours = measure.find_contours(bath, level=H_target)
 
     if not contours:
@@ -39,26 +39,25 @@ def extract_uniform_contour(bath, x, y, H_target, N_points):
         y_uniform = np.full_like(x_uniform, y_level)
         return x_uniform, y_uniform
 
-    # 2) Choose the longest contour
+    # Choose the longest contour
     contour = max(contours, key=len)
 
-    # Optional: reverse so that x increases on average (purely cosmetic)
+    # Reverse so that x increases 
     if contour[0,1] > contour[-1,1]:
         contour = contour[::-1]
 
-    # 3) Convert from index-space (row=y_idx, col=x_idx) to physical coords
-    #    NOTE: this is the crucial fix (no swapping):
+    # Convert from index-space (row=y_idx, col=x_idx) to physical coords
     x_contour = np.interp(contour[:, 1], np.arange(len(x)), x)  # col -> x
     y_contour = np.interp(contour[:, 0], np.arange(len(y)), y)  # row -> y
 
-    # 4) Degenerate safeguard (very short contour)
+    # In case of very short contour, return straight line whose mean depth is closest to target
     if len(x_contour) < 4:
         x_uniform = np.linspace(x[0], x[-1], N_points)
         y_level = y[np.argmin(np.abs(np.mean(bath, axis=1) - H_target))]
         y_uniform = np.full_like(x_uniform, y_level)
         return x_uniform, y_uniform
 
-    # 5) Reparameterize by arclength and resample uniformly
+    # Reparameterize by arclength and resample uniformly
     ds = np.hypot(np.diff(x_contour), np.diff(y_contour))
     s_raw = np.insert(np.cumsum(ds), 0, 0.0)
     s_uniform = np.linspace(0.0, s_raw[-1], N_points)
@@ -291,7 +290,7 @@ def interp_ds(ds, params, varnames, shiftdict={"xF": "xC", "yF": "yC"}):
 
 def interp2H(dsC, Hgrid):
     """
-    Interpolate a dataset onto a depth-following horizontal contour grid.
+    Interpolate a dataset onto a depth-following contour grid.
 
     This performs bilinear interpolation of `dsC` from a structured grid
     (defined by `xC`, `yC`) onto the 2D contour positions defined in `Hgrid`.
@@ -341,7 +340,7 @@ def rotate_dsH_tangential(dsH, Hgrid, map={"ui": ("u", "v"), "forcing_i": ("forc
 
     return dsH
 
-def rotate_dsH_normal(dsH, Hgrid, map={"zetaflux": ("zetau", "zetav")}):
+def rotate_dsH_normal(dsH, Hgrid, map={"zetaflux": ("zetau", "zetav"), "un": ("u", "v")}):
     """
     Compute normal components of vector fields on a depth-following contour grid.
 
@@ -349,7 +348,7 @@ def rotate_dsH_normal(dsH, Hgrid, map={"zetaflux": ("zetau", "zetav")}):
     direction normal to the local tangent vector. Skips any pair if variables are missing.
 
     Normal vector is defined as:
-        n̂ = (-dty, dtx)
+        n = (-dty, dtx)
 
     Args:
         dsH (xr.Dataset): Dataset on the depth-following grid (dims: ["j", "i"]).

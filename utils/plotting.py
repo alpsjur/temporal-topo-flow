@@ -3,69 +3,116 @@ import plotly.graph_objects as go
 from cmcrameri import cm as cmc
 from cmocean import cm as cmo
 import numpy as np
+from matplotlib.cm import get_cmap 
+import matplotlib
 
 ### Global style of figures ###
 
 # Default print resolution
 figure_dpi = 300
 
-# Standard journal widths in inches
+# Standard journal widths in cm
 figure_sizes_cm = {
-    "single": 16,
-    "double": 16*1.5
+    "single": 8.3,
+    "double": 12
 }
 
-# Article-appropriate color palette
+# Make a sliced colormap (20–100% of the Blues colormap)
+orig_cmap = plt.get_cmap("Blues")
+new_cmap = orig_cmap(np.linspace(0.2, 1.0, 256))
+new_cmap = matplotlib.colors.ListedColormap(new_cmap)
+
+# Color palette
 palette = {
     "background": "#ffffff",
     "text": "#000000",
-    "accent1": "#E64A19",  
-    "accent2": "#6495ED",  
-    "accent3": "#09B1A3",
-    "cmdiv": cmc.vik,      # muted, diverging
-    "cmcat": cmc.batlow,   # perceptually uniform, colorblind-friendly
-    "cmseq": cmc.buda,      # good for 1D fields (e.g., SSH, T, etc.)
+    #"accent2": "#6495ED",  
+    #"accent3": "#09B1A3",
+    "cmdiv": cmo.balance,      # muted, diverging
+    #"cmcat": cmc.batlow,   # perceptually uniform, colorblind-friendly
+    "cmseq": new_cmap#cmo.deep,      # good for 1D fields (e.g., SSH, T, etc.)
 }
+
+
+colorwheel = [
+    (000, 000, 000),   # black
+    (000,158,115),  # green
+    (213,94,0),    # orange
+    (000,114,178), # blue
+    # gray scale    
+    (85,85,85),    # dark gray
+    (170,170,170), # light gray
+    
+]
+
+#transform to hex
+colorwheel = ['#%02x%02x%02x' % color for color in colorwheel]
 
 # Global style settings for article figures
 plt.rcParams.update({
-    "lines.linewidth": 1.5,
-    "font.family": "sans-serif",
-    "font.size": 10,                  # base size: smaller, journal-appropriate
-    "axes.titlesize": 10,
-    "axes.labelsize": 10,
-    "xtick.labelsize": 9,
-    "ytick.labelsize": 9,
-    "legend.fontsize": 9,
-    "figure.titlesize": 10,
+    # --- Geometry & export ---
+    "figure.dpi": 180,
+    "savefig.dpi": 300,
+    "savefig.facecolor": "white",
+    #"constrained_layout.use": True,  # more reliable than tight_layout
 
-    # Light background for printing
+    # --- Lines & markers ---
+    "lines.linewidth": 1.0,          # thinner for small figures
+    "lines.markersize": 3.0,
+    "errorbar.capsize": 2.5,
+
+    # --- Font sizes (tuned for 8.3 cm width) ---
+    "font.family": "sans-serif",
+    "font.size": 6,                  # base font
+    "axes.titlesize": 7,
+    "axes.labelsize": 6,
+    "xtick.labelsize": 5.5,
+    "ytick.labelsize": 5.5,
+    "legend.fontsize": 5.5,
+    "figure.titlesize": 7,
+
+    # --- Colors & faces ---
     "figure.facecolor": "white",
     "axes.facecolor": "white",
     "savefig.facecolor": "white",
 
-    # Text and axes colors
-    "axes.edgecolor": palette["text"],
-    "axes.labelcolor": palette["text"],
-    "xtick.color": palette["text"],
-    "ytick.color": palette["text"],
-    "text.color": palette["text"],
-    "axes.titlecolor": palette["text"],
+    "axes.edgecolor": '#555555',#palette["text"],
+    "axes.labelcolor": '#555555',#palette["text"],
+    "xtick.color": '#555555',#palette["text"],
+    "ytick.color": '#555555',#palette["text"],
+    "text.color": '#555555',#palette["text"],
+    "axes.titlecolor": '#555555',#palette["text"],
 
-    # Gridlines (optional)
+    # --- Axes & ticks ---
+    "axes.spines.top": False,
+    "axes.spines.right": False,
+    "axes.linewidth": 0.8,
+    "xtick.direction": "out",
+    "ytick.direction": "out",
+    "xtick.major.size": 3,
+    "ytick.major.size": 3,
+    "xtick.minor.size": 2,
+    "ytick.minor.size": 2,
+
+    # --- Gridlines (subtle) ---
+    "axes.grid": False,              # enable per-axis if needed
     "grid.color": "#cccccc",
     "grid.linestyle": "--",
-    "grid.linewidth": 0.5,
+    "grid.linewidth": 0.4,
 
-    # Legend style
+    # --- Legend ---
+    "legend.frameon": False,
     "legend.edgecolor": palette["text"],
     "legend.facecolor": "white",
-    "legend.framealpha": 1.0
+    "legend.framealpha": 1.0,
+
+    # --- Fonts in vector outputs ---
+    "pdf.fonttype": 42,              # embed fonts as TrueType
+    "ps.fonttype": 42,
+    "mathtext.default": "regular",
+    "axes.formatter.use_mathtext": True,  # for consistent exponents, 1e−3 etc.
 })
 
-# Color list for line/marker plots
-n = 4
-colorwheel = [palette["cmcat"](i / (n - 1)) for i in range(n)]
 
 def customize_axis(ax, yzero=True, xzero=True):
     # Customize the appearance of the axes
@@ -101,8 +148,8 @@ def get_figure_dimensions(width="single", aspect_ratio=0.6):
 
     fig_height_cm = fig_width_cm * aspect_ratio
     
-    fig_width_in = int(fig_width_cm / 2.54)
-    fig_height_in = int(fig_height_cm / 2.54)
+    fig_width_in = (fig_width_cm / 2.54)
+    fig_height_in = (fig_height_cm / 2.54)
     
     fig_width_px = int(fig_width_in * figure_dpi)
     fig_height_px = int(fig_height_in * figure_dpi)
@@ -122,125 +169,6 @@ def create_figure(width="single", aspect_ratio=0.6, **kwargs):
     fig, ax = plt.subplots(figsize=(fig_width_in, fig_height_in), **kwargs)
     return fig, ax
 
-def plot_3D_bathymetry(
-    X, Y, h, 
-    width="single",
-    aspect_ratio=0.6
-):
-
-    _, (fig_width_px, fig_height_px) = get_figure_dimensions(width, aspect_ratio)
-
-    # Ensure 2D grids
-    if np.ndim(X) == 1 and np.ndim(Y) == 1:
-        Xg, Yg = np.meshgrid(X, Y, indexing="xy")
-    else:
-        Xg, Yg = X, Y
-
-    H = np.asarray(h, dtype=float)
-    cmin, cmax = np.nanmin(H), np.nanmax(H)
-
-    fig = go.Figure([
-        go.Surface(
-            z=H, x=Xg, y=Yg,
-            colorscale="deep",
-            cmin=cmin, cmax=cmax,
-            showscale=False,
-            lighting=dict(ambient=0.5, diffuse=0.8, roughness=0.5),
-            contours_z=dict(show=False)
-        )
-    ])
-
-    fig.update_layout(
-        font=dict(color=palette["text"], size=16),
-        width=fig_width_px,
-        height=fig_height_px,
-        scene=dict(
-            xaxis=dict(title="x [km]", color=palette["text"], gridcolor=palette["text"]),
-            yaxis=dict(title="y [km]", color=palette["text"], gridcolor=palette["text"]),
-            zaxis=dict(
-                title="Depth [m]", autorange="reversed",
-                color=palette["text"], gridcolor=palette["text"],
-                range=[0, cmax * 1.1], nticks=5
-            ),
-            aspectmode="manual",
-            aspectratio=dict(x=1, y=1, z=aspect_ratio)
-        ),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        margin=dict(l=0, r=0, b=0, t=40),
-        scene_camera=dict(
-            eye=dict(x=-1.2, y=1.2, z=0.7),
-            center=dict(x=0, y=0, z=-0.2)
-        )
-    )
-
-    return fig
-
-def add_surface_contours3d(
-    fig,
-    X, Y, h,
-    levels,
-    *,
-    color=palette["accent1"],
-    width=6,
-    eps="auto",           # small z-offset to avoid Z-fighting ("auto" ~ 1e-3 data range)
-    resample_factor=1,    # >1 to upsample before contour extraction (optional)
-):
-    """
-    Overlay 3D contour polylines (single style) on an existing go.Figure with a Surface.
-
-    Parameters
-    ----------
-    fig : go.Figure
-    X, Y : 1D or 2D arrays
-    h : 2D array
-    levels : sequence of float
-        Exact z-levels to draw as contours.
-    color : str
-        Color for contour lines.
-    width : float
-        Line width (pixels).
-    eps : float or "auto"
-        Small positive lift above the surface to prevent Z-fighting.
-    resample_factor : int
-        If >1, upsample X, Y, h for smoother contour paths (bilinear).
-    """
-    # Ensure 2D grids
-    if np.ndim(X) == 1 and np.ndim(Y) == 1:
-        Xg, Yg = np.meshgrid(X, Y, indexing="xy")
-    else:
-        Xg, Yg = X, Y
-    H = np.asarray(h, dtype=float)
-
-    cmin, cmax = np.nanmin(H), np.nanmax(H)
-    eps_val = max(1e-6, (cmax - cmin) * 1e-3) if eps == "auto" else float(eps)
-
-    # Optional upsampling
-    if resample_factor and resample_factor > 1:
-        from scipy.ndimage import zoom
-        zy = zx = int(resample_factor)
-        H  = zoom(H,  (zy, zx), order=1)
-        Xg = zoom(Xg, (zy, zx), order=1)
-        Yg = zoom(Yg, (zy, zx), order=1)
-
-    levels = np.asarray(levels, dtype=float)
-    cs = plt.contour(Xg, Yg, H, levels=levels)
-
-    for level, coll in zip(cs.levels, cs.collections):
-        for path in coll.get_paths():
-            v = path.vertices
-            if v.shape[0] < 2:
-                continue
-            fig.add_trace(go.Scatter3d(
-                x=v[:, 0],
-                y=v[:, 1],
-                z=np.full(v.shape[0], level - eps_val),
-                mode="lines",
-                line=dict(width=float(width), color=color),
-                showlegend=False
-            ))
-    plt.close()
-    return fig
 
 def plot_bathymetry(ax, X, Y, h):
     """
@@ -261,9 +189,10 @@ def plot_bathymetry(ax, X, Y, h):
         Z,
         extent=extent,
         #origin="lower",  
-        cmap=cmo.deep,
-        vmin=np.nanmin(h),
-        vmax=np.nanmax(h),
+        #cmap=cmo.deep,
+        cmap = palette["cmseq"],
+        vmin=100,#np.nanmin(h),
+        vmax=900,#np.nanmax(h),
         aspect="auto"
     )
 
@@ -279,7 +208,7 @@ def plot_bathymetry(ax, X, Y, h):
     return img
 
 
-def add_bathymetry_contours(ax, X, Y, h, contours, color=palette["accent1"], linewidth=1):
+def add_bathymetry_contours(ax, X, Y, h, contours, color=colorwheel[0], linewidth=1):
     """
     Add bathymetry contours to an existing axis.
     """
@@ -290,11 +219,12 @@ def add_bathymetry_contours(ax, X, Y, h, contours, color=palette["accent1"], lin
         linewidths=linewidth
     )
 
-def plot_scatter(ax, x, y):
+def plot_scatter(ax, x, y, **kwargs):
 
     ax.scatter(x, y,
-               color=palette["accent1"],
-               zorder=-1
+               color=colorwheel[2],
+               zorder=-1,
+               **kwargs
                )
 
     # # Plot a reference line (y=x) to help assess the agreement between estimates and simulations
@@ -322,22 +252,22 @@ def plot_circulation_timeseries(ax, ts):
     t = ts.time / np.timedelta64(1, "D")
     
     ax.plot(t, ts.circulation*1e2,
-            color=palette["accent1"],
+            color=colorwheel[0],#palette["accent1"],
             zorder=20,
-            label = "simulations"
+            label = "Simulations"
             )
     
     ax.plot(t, ts.linear_estimate*1e2,
-            color=palette["accent2"],
+            color=colorwheel[1],#palette["accent2"],
             zorder=21,
-            label="linear estimates"
+            label="Linear estimates"
             )
     
     ax.plot(t, ts.nonlinear_estimate*1e2,
-            color=palette["accent3"],
+            color=colorwheel[2],#palette["accent3"],
             zorder=22,
             linestyle="--",
-            label = "estimates including\nvorticity flux"
+            label = "Estimates including\nrelative vorticity flux"
             )
     
     # Customize the axis appearance
@@ -346,7 +276,7 @@ def plot_circulation_timeseries(ax, ts):
     
     
 def initialize_momentum_diagrams():
-    (fig_width_in, fig_height_in), _ = get_figure_dimensions("single", aspect_ratio=1)
+    (fig_width_in, fig_height_in), _ = get_figure_dimensions("single", aspect_ratio=0.92)
     fig = plt.figure(layout="constrained", figsize=(fig_width_in, fig_height_in))
     axd = fig.subplot_mosaic(
         [

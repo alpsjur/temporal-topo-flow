@@ -2,7 +2,7 @@ import numpy as np
 
 def bathymetry_xy(x, y, p):
     """
-    Evaluate the parametric bathymetry h(x, y) at a single point.
+    Evaluate the bathymetry function h(x, y) at a single point.
 
     Args:
         x (float): x-coordinate (horizontal position).

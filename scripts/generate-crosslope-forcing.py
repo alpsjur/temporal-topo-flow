@@ -14,7 +14,7 @@ def main():
     params = load_config()
     config = params["name"]
 
-    # NOTE: Forcing is intentionally generated using `default_params` with bumps,
+    # NOTE: This spesific forcing is intentionally generated using `default_params`, which includes bumps
     # even if the actual simulation uses a smooth or different bathymetry.
     # This creates a cross-slope component in the forcing. 
     ds = generate_sinusoidal_depthfollowing_forcing(default_params, params)
