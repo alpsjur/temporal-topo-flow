@@ -162,7 +162,7 @@ if forcing_from_file
     # Ensure forcing data is a Float64 array
     forcing_x_data = convert(Array{Float64, 3}, coalesce.(ds["forcing_x"][:, :, :], NaN))
     forcing_y_data = convert(Array{Float64, 3}, coalesce.(ds["forcing_y"][:, :, :], NaN))
-    time = convert(Vector{Float64}, coalesce.(ds["time"][:], NaN))
+    time = convert(Vector{Float64}, coalesce.(ds["time_sec"][:], NaN))
 
     println("Size of forcing_x_data: ", size(forcing_x_data))
     println("Size of forcing_y_data: ", size(forcing_y_data))
@@ -242,22 +242,6 @@ model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration=params["g
                           forcing=(u=forcing_u, v=forcing_v))
 set!(model, h=h_initial)
 
-
-# # TODO remove plotting 
-# # Plot bathymetry
-# using CairoMakie 
-# figurepath = "figures/bathymetry/"
-# fig = Figure(size=(800, 800))
-# axis = Axis(fig[1, 1], 
-#             aspect=DataAspect(),
-#             title="Model bathymetry",
-#             xlabel="x [m]",
-#             ylabel="y [m]")
-
-# depth = model.solution.h   
-# hm = heatmap!(axis, depth, colormap=:deep)
-# Colorbar(fig[1, 2], hm, label="Depth [m]")
-# save(figurepath * runname * "-bathymetry.png", fig)
 
 
 # Initialize simulation
