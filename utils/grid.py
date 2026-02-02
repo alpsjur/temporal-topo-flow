@@ -11,6 +11,13 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from utils.config import default_params
 
+def mean_onH(dsH, variable):
+    """
+    Compute mean of variable along depth-following contours.
+    dsH is created using prepare_dsH().
+    """
+    return (dsH[variable] * dsH.dl).sum("i") / dsH.dl.sum("i")
+
 def extract_uniform_contour(bath, x, y, H_target, N_points):
     """
     Extract a depth contour at a target depth and resample it to uniform arclength.
