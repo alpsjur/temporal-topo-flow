@@ -1,12 +1,8 @@
-import xarray as xr
-import numpy as np
-import sys
-from pathlib import Path
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import os
-
 """
+Creates an animation of simulation output. 
+To create a animation of a specific simulation, run from the command line:
+    python scripts/animate_fields.py configs/{name}.json
+
 Animate velocity (left panel) and vorticity fields (right panel) from raw model output. 
 Velocity vectors are downsampled for clarity. Speed is represented both by vector length and color.
 
@@ -14,6 +10,15 @@ Velocity vectors are downsampled for clarity. Speed is represented both by vecto
 - Interpolates u/v to cell centers, downsamples vectors, and computes arrow scaling for consistent vector length.
 - Produces an MP4 (or GIF fallback) saved under animations/animation_{name}.ext.
 """
+
+import xarray as xr
+import numpy as np
+import sys
+from pathlib import Path
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+#from matplotlib.animation import FFMpegWriter
+import os
 
 # Add project root to sys.path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
@@ -134,7 +139,7 @@ def make_axes(extent, x, y, xb, yb, tau, bathymetry, H_targets, i0, speed, zeta,
 
     im0 = ax0.imshow(
         speed[i0], origin="lower", extent=extent, aspect="equal",
-        interpolation="nearest", vmin=vmin, vmax=vmax, cmap=palette["cmseq"]
+        interpolation="lanczos", vmin=vmin, vmax=vmax, cmap=palette["cmseq"]
     )
     cb0 = fig.colorbar(im0, ax=ax0, pad=0.02, label="|u| [cm s⁻¹]", orientation="horizontal", shrink=0.8)
 
@@ -151,9 +156,9 @@ def make_axes(extent, x, y, xb, yb, tau, bathymetry, H_targets, i0, speed, zeta,
         gain * u_binned[i0],
         gain * v_binned[i0],
         angles="xy", scale_units="xy", scale=1.0,
-        width=0.004, pivot="mid",
+        width=0.006, pivot="mid",
         color=colorwheel[2],
-        headwidth=3.5, headlength=5.5, headaxislength=4.0, minlength=0.0,
+        headwidth=4.0, headlength=6.0, headaxislength=4.0, minlength=0.0,
         zorder=12
     )
     
@@ -163,7 +168,7 @@ def make_axes(extent, x, y, xb, yb, tau, bathymetry, H_targets, i0, speed, zeta,
     zeta_lim = np.nanpercentile(np.abs(zeta), 98)
     im1 = ax1.imshow(
         zeta[i0], origin="lower", extent=extent, aspect="equal",
-        interpolation="nearest", cmap=palette["cmdiv"],
+        interpolation="lanczos", cmap=palette["cmdiv"],
         vmin=-zeta_lim, vmax=zeta_lim
     )
     cb1 = fig.colorbar(im1, ax=ax1, pad=0.02, label=r"$\zeta$ [s⁻¹]", orientation="horizontal", extend="both", shrink=0.8)
@@ -236,22 +241,34 @@ def animate(params, ds):
         return im0, quiv, ttl0, im1, ttl1
 
     ani = animation.FuncAnimation(fig, update, 
-                                  frames=speed.shape[0], 
-                                  #frames = 50,  # limit frames for faster rendering
+                                  #frames=speed.shape[0], 
+                                  frames = 50,  # limit frames for faster rendering
                                   interval=100, 
                                   blit=False
                                   )
 
     out_path = outdir / f"animation_{params['name']}.mp4"
-    try:
-        ani.save(str(out_path), dpi=300, fps=20, codec="h264")
-    except Exception:
-        # fallback to gif if mp4 fails
-        try:
-            gif_path = outdir / f"animation_{params['name']}.gif"
-            ani.save(str(gif_path), dpi=300, fps=20, writer="pillow")
-        except Exception:
-            print("Warning: could not save animation (missing writer).")
+
+    # writer = FFMpegWriter(
+    #     fps=20,
+    #     codec="libx264",
+    #     extra_args=[
+    #         "-crf", "18",
+    #         "-preset", "slow",
+    #         "-pix_fmt", "yuv444p",      # <- key: no chroma subsampling
+    #         "-profile:v", "high444"
+    #     ],
+    # )
+    #ani.save(str(out_path), writer=writer, dpi=200)
+    ani.save(str(out_path), dpi=200, fps=20, codec="h264", 
+             extra_args=[
+                 "-crf", "18",
+                 "-preset", "slow",
+                 "-pix_fmt", "yuv444p",      # <- key: no chroma subsampling
+                 "-profile:v", "high444"
+             ],
+             )
+
 
 
 def main():

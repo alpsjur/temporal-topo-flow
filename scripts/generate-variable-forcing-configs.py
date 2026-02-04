@@ -1,5 +1,11 @@
+"""
+This script generates multiple JSON configuration files for simulations with varying wind stress amplitude (tau0).
+Each configuration file is named short_001.json, short_002.json, ..., short_020
+"""
+
 import json
 import os
+
 
 # Parameters
 T = 1382400.0
