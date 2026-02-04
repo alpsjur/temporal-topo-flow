@@ -1,108 +1,150 @@
 # temporal-topo-flow
 Time-dependent flow over topography. ⏳⛰️🌊
 
-This repository contains scripts for simulating time-variable flow over corrugated topography, using the shallow water model from [Oceananigans.jl](https://clima.github.io/OceananigansDocumentation/stable/).  
+This repository contains code for simulating and analyzing time-variable flow over corrugated topography using the shallow-water model in Oceananigans.jl.
 
-[Some info on the project]
+The analysis supports the study:
+> **Nonlinear dynamics of time-variable slope circulation**, *Sjur, A. L. P., Isachsen, P. E., Nilsson, J., Allen, S.*, *2026*  
 
 
+Processed data needed to reproduce the manuscript figures are included in `output/processed/`.  
+Raw model output is not included by default (it is quite large); see *How to run the simulations* below if you want to generate it.
+
+---
+TODO add python env and requirements 
 ## Project structure
 
 ```
 temporal-topo-flow/
-├─ configs/                     # Experiment configs (JSON) for main runs
-├─ input/                       # Generated input files live here
-├─ notebooks/                   # Jupyter notebooks (postprocessing / plotting)
+├─ configs/                     # Experiment configs (JSON)
+├─ input/                       # Generated inputs (e.g., forcing files)
+├─ notebooks/                   # Postprocessing and plotting notebooks
 ├─ output/
-│  ├─ processed/                # Contains data needed for the figures in the paper 
-├─ reproduce_brink_2010/        # Validation: reproduce figures from Brink (2010)
+│  ├─ processed/                # Data needed to reproduce manuscript figures
+│  └─ raw/                      # (Generated) raw simulation output
+├─ reproduce_brink_2010/        # Validation: reproduce Brink (2010)
 │  ├─ code/
-│  │  ├─ brink_2010.jl          # Run SW model & save output
-│  │  ├─ plot_brink_fig2.jl     # Recreate Fig. 2 from Brink (2010)
-│  │  └─ plot_brink_fig3.jl     # Recreate Fig. 3 from Brink (2010)
-│  ├─ figures/                  # Generated figures 
-│  └─ output/                   # Example output
-├─ scripts/                     # scripts for experiments, including the simulation setup in "simulations.jl"
-├─ utils/                       # Helper functions
-├─ Project.toml                 # Julia project manifest (dependencies)
+│  ├─ figures/
+│  └─ output/
+├─ scripts/                     # Simulation and helper scripts (Julia)
+├─ utils/                       # Python helper functions (IO, grids, plotting, etc.)
+├─ Project.toml                 # Julia project environment
 └─ README.md
 ```
 
+---
 
 ## Analysis presented in the paper
-### Postprocessing
 
-Postprocessing and analysis of simulations for the paper is done in  
-`notebooks/postprocess_modeloutput.ipynb`.
-Note that this requires that the simulation output is already created (see below). It is recomended to run the simulations on a using HPC resourses, idelay on GPUs. However, the resulted postprocessed data is already included in this repository under `output/processed/`.
+### Shallow water simulations
+Model setup can be found in: 
+- `scripts/simulation.jl`.
+
+### Postprocessing
+Postprocessing and diagnostics are performed in:
+- `notebooks/postprocess_modeloutput.ipynb`
+
+This notebook reads raw simulation output from full production runs and computes the diagnostics used in the paper. It writes compact processed datasets to `output/processed/`.
+
+
+Re-running the full simulations and postprocessing pipeline is optional and computationally demanding. The processed datasets required to reproduce all manuscript figures are already included in this repository.
 
 ### Plotting
-Figures for the paper are created in
-`notebooks/make_figures.ipynb`. This makes use of the alerady processed data in `output/processed/`.
+Figures for the paper are generated in:
+- `notebooks/make_figures.ipynb`
+
+This notebook reads from `output/processed/` and produces all figures used in the manuscript.  
+It can be run independently of the simulations and postprocessing, and is suitable for exploring the results and modifying figure appearance.
+
+---
 
 ## How to run the simulations
 
-### Requirements
-- **Julia** 
-- **Packages:** managed via `Project.toml` (instantiated automatically)
+### Requirements 
+- Julia, can be installed from [here](https://julialang.org/downloads/)
+- Dependencies are managed via `Project.toml`
 
 ### 1) Clone the repository
-```bash
-git clone  https://github.com/alpsjur/temporal-topo-flow.git
+```
+git clone https://github.com/alpsjur/temporal-topo-flow.git
 cd temporal-topo-flow
 ```
 
 ### 2) Instantiate the Julia environment
-Run once to install all packages for this project:
-```bash
+```
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 ```
-If you prefer the REPL:
-```julia
-using Pkg
-Pkg.activate(".")
-Pkg.instantiate()
-```
 
-The `--project` flag makes Julia use this repo’s environment. Packages are installed locally.
+### Running simulations
 
-### 3) Optional: Generate forcing files
-If spesified in the config file, experiments can be ran with forcing from file. These forcing files can be generated by scripts like `scripts/generate-crossslope-forcing`.
-
-### 4) Run simulations
 #### Single experiment
-
-To run a single experiment with configuration spesified in `configs/experiment_name.json`:
-```bash
+To run a single experiment specified by a JSON config in `configs/`:
+```
 julia --project=. scripts/simulation.jl configs/experiment_name.json
 ```
 
-#### Batch run
-To run multiple experiments conveniently, use the provided bash script:
+By default, outputs are written under `output/raw/`.
 
-```bash
-./runs_simulations.bash
+#### Batch runs
+To run the full set of experiments used in the paper, use the provided batch script:
+```
+./run_simulations.bash
 ```
 
-- This script loops through a set of configs in `configs/` and launches simulations.  
-- Each run writes output into its own subfolder (by default under `output/raw/`).  
-- You can edit the script to add/remove experiments, or adjust paths for your system.
+This script loops over a predefined set of configurations and launches the corresponding simulations.  
+It is intended for use on HPC systems and may require local adaptations.
 
+### Optional: forcing from file
+Some experiments use forcing read from file. Forcing files can be generated with scripts such as:
+- `scripts/generate_crossslope_forcing.py`
 
-## Topographic wave calculations
-Topographic wave properties are calculated using the Matlab code [bwavesp](https://darchive.mblwhoilibrary.org/entities/publication/5433c043-2cc9-4906-a63e-c80a57f524e3). 
+Generated forcing files are stored in `input/`.
 
-For this project, the code is ran using the script `script/run_bwavesp.m`, with input from the file `input/bwavesp_input.txt`.
+---
 
-## Running the Brink (2010) validation case
+## Python environment (for notebooks)
 
-From the repo root:
-```bash
-# 1) Run the simulation (saves .jld2 in reproduce_brink_2010/output)
+Two environment specifications are provided:
+
+- `environment.yml`  
+  A minimal, readable specification intended for creating a working analysis
+  environment. This pins the xarray–xgcm versions required for correct behavior.
+
+- `environment-lock.yml`  
+  An exact snapshot of the environment used to generate the results in the paper.
+  This can be used for full reproducibility.
+
+---
+
+## Topographic wave calculations (bwavesp)
+
+Topographic wave properties are computed using the MATLAB code **bwavesp**:
+- reference: https://darchive.mblwhoilibrary.org/entities/publication/5433c043-2cc9-4906-a63e-c80a57f524e3
+
+In this project, bwavesp is run via:
+- `scripts/run_bwavesp.m`
+
+with input from:
+- `input/bwavesp_input.txt`
+
+If you only want to reproduce manuscript figures, the wave-model outputs used for plotting are already included where needed.
+
+---
+
+## Brink (2010) validation case
+
+From the repository root:
+```
+# 1) Run the simulation (writes to reproduce_brink_2010/output)
 julia --project=. reproduce_brink_2010/code/brink_2010.jl
 
 # 2) Recreate figures (writes to reproduce_brink_2010/figures)
 julia --project=. reproduce_brink_2010/code/plot_brink_fig2.jl
 julia --project=. reproduce_brink_2010/code/plot_brink_fig3.jl
 ```
-The repo includes small example outputs so you can test the plotting scripts without a full rerun.
+
+Small example outputs are included so the plotting scripts can be tested without a full rerun.
+
+
+---
+Enjoy!
