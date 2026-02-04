@@ -41,7 +41,8 @@ figures/
 animations/
 
 # data
-output/
+output/raw/
+reproduce_brink_2010/output
 input/
 
 # exploratory stuff
