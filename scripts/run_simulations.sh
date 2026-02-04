@@ -1,4 +1,10 @@
 #!/bin/bash
+"""
+Script to run simulations for multiple configurations.
+If an email is provided, a notification will be sent when each simulation is done.
+Run from command line:
+    bash scripts/run_simulations.sh
+"""
 
 # Ask for user email
 read -p "Enter your email address for a notification when the simulation is done: " user_email

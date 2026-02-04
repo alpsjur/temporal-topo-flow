@@ -1,3 +1,19 @@
+"""
+This script runs a shallow water simulation using Oceananigans.jl. It allows for configuration via a JSON file, 
+which can specify parameters such as grid size, time step, forcing, and bathymetry. The simulation can run on either CPU or GPU
+based on the configuration and system capabilities. 
+The script also supports loading custom bathymetry and forcing data from NetCDF files.    
+The output is saved in NetCDF format at specified intervals.
+
+To run the simulation with a specific configuration, use:
+    julia scripts/simulation.jl configs/{name}.json
+
+To run with default parameters, simply use:
+    julia scripts/simulation.jl
+
+To run batch simulations with different configurations, consider using the provided run_simulations.sh script.
+"""
+
 using Oceananigans
 using Oceananigans.Units
 using Printf                   

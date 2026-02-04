@@ -48,7 +48,8 @@ def read_raw_output(params):
             - 'forcing_x' and 'forcing_y' (3D arrays on ["time", "yC", "xC"])
     """
     # Load raw model output
-    ds = xr.open_dataset(resolve_input_path(params["filepath"] + "raw/" + params["name"] + ".nc")).squeeze()
+    ds = xr.open_dataset(resolve_input_path(params["filepath"] + "raw/" + params["name"] + ".nc"),
+                         ).squeeze()
 
     # Load or generate bathymetry
     if "bathymetry_file" in params:
@@ -62,61 +63,17 @@ def read_raw_output(params):
 
     # Load or generate forcing
     if "forcing_file" in params:
-        forcing_ds = xr.open_dataset(resolve_input_path(params["forcing_file"]))
+        forcing_ds = xr.open_dataset(resolve_input_path(params["forcing_file"]),
+                                    ).squeeze()
+    
+       
         
         if "forcing_x" not in forcing_ds or "forcing_y" not in forcing_ds:
             raise ValueError(f"Forcing file '{params['forcing_file']}' does not contain correct forcing variables.")
         ds["forcing_x"] = forcing_ds["forcing_x"]
         ds["forcing_y"] = forcing_ds["forcing_y"]
 
-        # # 1) rename x/y -> xC/yC (your generator uses x,y)
-        # if ("x" in f.dims) or ("x" in f.coords): f = f.rename({"x": "xC"})
-        # if ("y" in f.dims) or ("y" in f.coords): f = f.rename({"y": "yC"})
-
-        # # 2) ensure variable dims are (time, yC, xC) to match the model
-        # for v in ["forcing_x", "forcing_y"]:
-        #     if v in f and tuple(f[v].dims) != ("time", "yC", "xC"):
-        #         wanted = ("time", "yC", "xC")
-        #         have = f[v].dims
-        #         if set(have) == set(wanted):
-        #             f[v] = f[v].transpose(*wanted)
-        #         else:
-        #             raise ValueError(f"{v} has unexpected dims {have}; expected {wanted} (any order ok).")
-
-        # # 3) make forcing time timedelta64[ns] 
-        # import pandas as pd
-        # t_f = f["time"]
-        # if np.issubdtype(t_f.dtype, np.timedelta64):
-        #     f = f.assign_coords(time=t_f.astype("timedelta64[ns]"))
-        # elif np.issubdtype(t_f.dtype, np.datetime64):
-        #     f = f.assign_coords(time=(t_f - t_f.isel(time=0)).astype("timedelta64[ns]"))
-        # else:
-        #     # numeric -> seconds
-        #     f = f.assign_coords(time=xr.DataArray(pd.to_timedelta(t_f.values, unit="s"), dims="time"))
-
-        # # 4) make model time timedelta64[ns] as well
-        # t_ds = ds["time"]
-        # if np.issubdtype(t_ds.dtype, np.timedelta64):
-        #     t_model = t_ds.astype("timedelta64[ns]")
-        # elif np.issubdtype(t_ds.dtype, np.datetime64):
-        #     t_model = (t_ds - t_ds.isel(time=0)).astype("timedelta64[ns]")
-        # else:
-        #     t_model = xr.DataArray(pd.to_timedelta(t_ds.values, unit=params.get("model_time_unit", "s")), dims="time")
-
-        # # 5) align horizontally if grids differ (nearest to avoid smoothing)
-        # if "xC" in f.coords and "xC" in ds.coords and not np.array_equal(f["xC"], ds["xC"]):
-        #     f = f.interp(xC=ds["xC"], method="nearest")
-        # if "yC" in f.coords and "yC" in ds.coords and not np.array_equal(f["yC"], ds["yC"]):
-        #     f = f.interp(yC=ds["yC"], method="nearest")
-
-        # # 6) interpolate in time
-        # f = f.interp(time=t_model, method="linear")
-
-        # # 7) attach
-        # for key in ["forcing_x", "forcing_y"]:
-        #     if key not in f:
-        #         raise ValueError(f"'{key}' not found in forcing file: {params['forcing_file']}")
-        #     ds[key] = f[key]
+    
     else:
         forcing = generate_zonal_forcing(params) 
         for key in ["forcing_x", "forcing_y"]:
@@ -127,47 +84,4 @@ def read_raw_output(params):
 
     return ds
 
-# TODO fjerne?
-def save_processed_ds(ds, params, onH=False):
-    """
-    Save an xarray dataset of processed results to NetCDF format.
 
-    Parameters
-    ----------
-    ds : xarray.Dataset
-        The dataset to save.
-    params : dict
-        Dictionary of parameters containing:
-            - "filepath": base path where simulation outputs are stored.
-            - "name": configuration name.
-    onH : bool, optional
-        If True, save the dataset in a "depth-following" subdirectory
-        with a `_depth-following.nc` suffix.
-        If False (default), save in a "cartesian" subdirectory
-        with a `_cartesian.nc` suffix.
-
-    Notes
-    -----
-    - The function ensures that the appropriate output directory exists
-      before attempting to save.
-    """
-
-    if onH:
-        # Ensure depth-following directory exists
-        ensure_dir(params["filepath"] + "processed/depth-following/")
-        # Build output filename for depth-following dataset
-        output_name = (
-            params["filepath"] + "processed/depth-following/" 
-            + params["name"] + "_depth-following.nc"
-        )
-    else:
-        # Ensure cartesian directory exists
-        ensure_dir(params["filepath"] + "processed/cartesian/")
-        # Build output filename for cartesian dataset
-        output_name = (
-            params["filepath"] + "processed/cartesian/" 
-            + params["name"] + "_cartesian.nc"
-        )
-    
-    # Save dataset to NetCDF file
-    ds.to_netcdf(output_name, mode="w")

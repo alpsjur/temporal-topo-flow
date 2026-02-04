@@ -1,3 +1,11 @@
+"""
+This script generates a cross-slope wind stress forcing file for a given simulation configuration.
+The generated forcing is saved as a NetCDF file in the input/forcing/ directory.
+
+To create the forcing file for a specific simulation, run from the command line:
+    python scripts/generate-crosslope-forcing.py configs/{name}.json
+"""
+
 import xarray as xr
 import numpy as np
 import sys
@@ -9,6 +17,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from utils.bathymetry import generate_bathymetry, bathymetry_gradient
 from utils.config import load_config, default_params
 from utils.forcing import generate_sinusoidal_depthfollowing_forcing
+
 
 def main():
     params = load_config()

@@ -1,9 +1,6 @@
 import matplotlib.pyplot as plt
-import plotly.graph_objects as go
-from cmcrameri import cm as cmc
 from cmocean import cm as cmo
 import numpy as np
-from matplotlib.cm import get_cmap 
 import matplotlib
 
 ### Global style of figures ###
