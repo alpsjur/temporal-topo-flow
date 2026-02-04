@@ -116,7 +116,6 @@ Hbs = params["Hbs"]
 Acorr = params["Acorr"]
 lam = params["lam"]
 
-#wizard_interval = params["wizard_interval"]
 
 # Derived parameters
 omega = 2 * pi / T
@@ -263,19 +262,12 @@ set!(model, h=h_initial)
 # Initialize simulation
 simulation = Simulation(model, Δt=dt, stop_time=tmax)
 
-# # adaptive time step 
-# #wizard = TimeStepWizard(cfl=0.2, max_Δt=dt)
-# #simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(wizard_interval))
-# conjure_time_step_wizard!(simulation, IterationInterval(wizard_interval), cfl=0.2, max_Δt=dt)
-
 # Logging simulation progress
 start_time = time_ns()
 progress(sim) = @printf(
     "i: %6d, sim time: % 12s, wall time: %12s, Δt: %4s\n",
     sim.model.clock.iteration,
     prettytime(sim.model.clock.time),
-    #minimum(sim.model.solution.v),
-    #maximum(sim.model.solution.v),
     prettytime(1e-9 * (time_ns() - start_time)),
     sim.Δt
     )
@@ -290,17 +282,8 @@ eta = h + bath
 
 
 uvh = Field(u*v*h)
-#uuh = Field(u*u*h)        # Do I need these?
-#vvh = Field(v*v*h)        #
-# duvhdx = Field(∂x(uvh))   #
 duvhdy = Field(∂y(uvh))   
-# duuhdx = Field(∂x(uuh))   #
-# duuhdy = Field(∂y(uuh))   #
-# dvvhdx = Field(∂x(vvh))   #
-# dvvhdy = Field(∂y(vvh))   #
-
 detadx = Field(∂x(eta))   
-#detady = Field(∂y(eta))  #
 
 zeta_field = Field(∂x(v) - ∂y(u))
 zetau = Field(zeta_field * u)
@@ -311,10 +294,6 @@ fields = Dict("u" => u, "v" => v,
               "h" => h, "zeta" => zeta_field,
               "zetau" => zetau, "zetav" => zetav,
               "duvhdy" => duvhdy, "detadx" => detadx,
-              #"duvhdx" => duvhdx, "duvhdy" => duvhdy, 
-              #"duuhdx" => duuhdx, "duuhdy" => duuhdy, 
-              #"dvvhdx" => dvvhdx, "dvvhdy" => dvvhdy, 
-              #"detadx" => detadx, "detady" => detady,
               )
 
 simulation.output_writers[:field_writer] = NetCDFOutputWriter(model, fields, 
