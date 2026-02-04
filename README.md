@@ -11,7 +11,6 @@ Processed data needed to reproduce the manuscript figures are included in `outpu
 Raw model output is not included by default (it is quite large); see *How to run the simulations* below if you want to generate it.
 
 ---
-TODO add python env and requirements 
 ## Project structure
 
 ```
@@ -28,6 +27,8 @@ temporal-topo-flow/
 │  └─ output/
 ├─ scripts/                     # Simulation and helper scripts (Julia)
 ├─ utils/                       # Python helper functions (IO, grids, plotting, etc.)
+├─ environment-lock.yml         # Excact python environment for reproducability
+├─ environment.yml              # Minimal, readable python environment
 ├─ Project.toml                 # Julia project environment
 └─ README.md
 ```
