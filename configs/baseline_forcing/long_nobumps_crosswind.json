@@ -1,0 +1,8 @@
+{
+    "name": "long_nobumps_crosswind",    
+    "T": 11059200.0,
+    "tmax": 33177600.0,
+    "dt":2,
+    "Acorr" : 0,
+    "forcing_file": "input/forcing/long_nobumps_crosswind_forcing.nc" 
+}

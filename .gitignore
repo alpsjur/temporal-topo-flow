@@ -25,8 +25,12 @@ docs/site/
 # environment.
 Manifest.toml
 
+
+# Python stuff
+__pycache__/
+
 ### Other ###
-configs/run*
+*/configs/run*
 
 .vscode
 
@@ -37,13 +41,11 @@ figures/
 animations/
 
 # data
-output/
+output/raw/
+reproduce_brink_2010/output
+input/
 
-
-## Re-include spesific folders
-!reproduce_brink_2010/output/
-!reproduce_brink_2010/output/**
-
-!reproduce_brink_2010/figures/
-!reproduce_brink_2010/figures/**
-
+# exploratory stuff
+slope/*
+slope
+configs/run*
