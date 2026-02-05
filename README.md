@@ -4,7 +4,7 @@ Time-dependent flow over topography. ⏳⛰️🌊
 This repository contains code for simulating and analyzing time-variable flow over corrugated topography using the shallow-water model in Oceananigans.jl.
 
 The analysis supports the study:
-> **Nonlinear dynamics of time-variable slope circulation**, *Sjur, A. L. P., Isachsen, P. E., Nilsson, J., Allen, S.*, *2026*  
+> *Sjur, A. L. P., Isachsen, P. E., Nilsson, J., Allen, S.*. **Nonlinear dynamics of time-variable slope circulation**  
 
 
 Processed data needed to reproduce the manuscript figures are included in `output/processed/`.  
@@ -133,6 +133,10 @@ If you only want to reproduce manuscript figures, the wave-model outputs used fo
 ---
 
 ## Brink (2010) validation case
+The validation case reproduces results from the following study:
+
+> *Brink, K.H.*, *2010*. **Topographic rectification in a forced, dissipative, barotropic ocean**. *Journal of Marine Research* 68, 337–368. https://doi.org/10.1357/002224010794657209
+
 
 From the repository root:
 ```
