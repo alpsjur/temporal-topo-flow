@@ -8,7 +8,7 @@ Velocity vectors are downsampled for clarity. Speed is represented both by vecto
 
 - Loads configuration, reads raw output, and trims the time window to match publication figures.
 - Interpolates u/v to cell centers, downsamples vectors, and computes arrow scaling for consistent vector length.
-- Produces an MP4 (or GIF fallback) saved under animations/animation_{name}.ext.
+- Produces an MP4 saved under animations/animation_{name}.ext.
 """
 
 import xarray as xr
@@ -30,7 +30,7 @@ from utils.plotting import create_figure, palette, colorwheel, customize_axis, g
 
 
 # Parameters for arrow density and scaling, for readability
-ARROW_DENSITY = 5  # Number of cells per bin (controls vector density)
+ARROW_DENSITY = 8  # Number of cells per bin (controls vector density)
 
 
 def load_and_prepare():
@@ -168,7 +168,9 @@ def make_axes(extent, x, y, xb, yb, tau, bathymetry, H_targets, i0, speed, zeta,
     zeta_lim = np.nanpercentile(np.abs(zeta), 98)
     im1 = ax1.imshow(
         zeta[i0], origin="lower", extent=extent, aspect="equal",
-        interpolation="lanczos", cmap=palette["cmdiv"],
+        #interpolation="lanczos", 
+        interpolation="nearest",
+        cmap=palette["cmdiv"],
         vmin=-zeta_lim, vmax=zeta_lim
     )
     cb1 = fig.colorbar(im1, ax=ax1, pad=0.02, label=r"$\zeta$ [s⁻¹]", orientation="horizontal", extend="both", shrink=0.8)
@@ -222,13 +224,28 @@ def animate(params, ds):
 
     # Time annotation
     _time_str = make_time_string(time)
-    ttl0 = ax0.text(0.02, 0.98, f"t = {_time_str(time[i0])}", transform=ax0.transAxes, va="top", ha="left",
-                    zorder=20, bbox=dict(facecolor="white", alpha=0.9, edgecolor="none", pad=2))
+    #ttl0 = ax0.text(0.02, 0.98, f"t = {_time_str(time[i0])}", transform=ax0.transAxes, va="top", ha="left",
+    #                zorder=20, bbox=dict(facecolor="white", alpha=0.9, edgecolor="none", pad=2))
     ttl1 = ax1.text(0.02, 0.98, f"t = {_time_str(time[i0])}", transform=ax1.transAxes, va="top", ha="left",
                     zorder=20, bbox=dict(facecolor="white", alpha=0.9, edgecolor="none", pad=2))
+    
+    # Add text explaining that contours are bathymetry
+    #for ax in (ax0, ax1):
+    ax1.text(
+        0.98, 0.98,
+        "Bathymetry contours (gray)",
+        transform=ax1.transAxes,
+        va="top", ha="right",
+        #fontsize=8,
+        color="gray",
+        zorder=21,
+        bbox=dict(facecolor="white", alpha=0.9, edgecolor="none", pad=2)
+    )
 
     outdir = Path("animations")
     outdir.mkdir(parents=True, exist_ok=True)
+    
+    # Save a static frame for reference
     fig.savefig(outdir / f"static_frame_{params['name']}.png", dpi=150)
 
     def update(frame):
@@ -236,30 +253,20 @@ def animate(params, ds):
         im0.set_data(speed[frame])
         quiv.set_UVC(gain * u_binned[frame], gain * v_binned[frame])
         im1.set_data(zeta[frame])
-        ttl0.set_text(f"t = {_time_str(time[frame])}")
+        #ttl0.set_text(f"t = {_time_str(time[frame])}")
         ttl1.set_text(f"t = {_time_str(time[frame])}")
-        return im0, quiv, ttl0, im1, ttl1
+        #return im0, quiv, ttl0, im1, ttl1
+        return im0, quiv, im1, ttl1
 
     ani = animation.FuncAnimation(fig, update, 
-                                  #frames=speed.shape[0], 
-                                  frames = 50,  # limit frames for faster rendering
+                                  frames=speed.shape[0], 
+                                  #frames = 50,  # limit frames for faster rendering
                                   interval=100, 
                                   blit=False
                                   )
 
     out_path = outdir / f"animation_{params['name']}.mp4"
 
-    # writer = FFMpegWriter(
-    #     fps=20,
-    #     codec="libx264",
-    #     extra_args=[
-    #         "-crf", "18",
-    #         "-preset", "slow",
-    #         "-pix_fmt", "yuv444p",      # <- key: no chroma subsampling
-    #         "-profile:v", "high444"
-    #     ],
-    # )
-    #ani.save(str(out_path), writer=writer, dpi=200)
     ani.save(str(out_path), dpi=200, fps=20, codec="h264", 
              extra_args=[
                  "-crf", "18",
