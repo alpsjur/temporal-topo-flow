@@ -2,43 +2,6 @@ import numpy as np
 import xarray as xr
 from utils.bathymetry import generate_bathymetry, bathymetry_gradient
 
-# def generate_sinusoidal_depthfollowing_forcing(default_params, params):
-#     """
-#     Generate wind stress forcing that follows bathymetry contours,
-#     with sinusoidal time variation and magnitude tau0.
-
-#     Args:
-#         params (dict): Dictionary of configuration parameters. 
-
-#     Returns:
-#         xr.Dataset: Dataset with 'forcing_x' and 'forcing_y' on (time, x, y)
-#     """
-#     T, tau0 = params["T"], params["tau0"]
-#     time = np.arange(0, params["tmax"], params["outputtime"])
-
-#     # Generate bathymetry and gradients
-#     X, Y, h = generate_bathymetry(default_params)
-#     dh_dx, dh_dy = bathymetry_gradient(h, default_params["dx"], default_params["dy"])
-
-#     # Compute unit tangent vectors to bathymetry contours
-#     threshold = 1e-10
-#     u_tan = np.where(dh_dy < threshold, 1.0, dh_dy / dh_dy)
-#     v_tan = np.where(dh_dy < threshold, 0.0, -dh_dx / dh_dy)
-
-#     # Time-dependent amplitude of forcing
-#     amplitude = tau0 * np.sin(2 * np.pi * time / T)
-
-#     tau_x = amplitude[:, None, None] * u_tan[None, :, :]
-#     tau_y = amplitude[:, None, None] * v_tan[None, :, :]
-
-#     return xr.Dataset(
-#         {
-#             "forcing_x": (["time", "y", "x"], tau_x),
-#             "forcing_y": (["time", "y", "x"], tau_y),
-#         },
-#         coords={"time": time, "x": X[0, :], "y": Y[:, 0]}
-#     )
-
 def generate_sinusoidal_depthfollowing_forcing(default_params, params):
     """
     Generate wind stress forcing that follows bathymetry contours,
