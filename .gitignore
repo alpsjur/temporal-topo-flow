@@ -43,7 +43,6 @@ animations/
 # data
 output/raw/
 reproduce_brink_2010/output
-input/
 
 # exploratory stuff
 slope/*

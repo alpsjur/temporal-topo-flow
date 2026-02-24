@@ -1,0 +1,38 @@
+# Input fields bwavesp
+# For our slope geometry
+
+# Grid and domain settings
+90          # nn: Number of grid points across shelf
+90          # W: Domain width in km
+
+# Accuracy and model assumptions
+1e-6        # acc: Accuracy of frequency calculation
+1           # del: 0 = rigid lid, 1 = free surface
+1           # eps: 0 = long wave approx, 1 = general
+0           # icbc: 0 = closed at x = 0, 1 = open
+0           # iobc: 0 = closed at x = xmax, 1 = open
+1e-4        # f: Coriolis parameter [1/s]
+
+# Dispersion settings
+100          # nw: Number of wavenumbers to compute. 24 for 45 km
+7e-7        # rlz: First wavenumber [1/cm]   7e-7 for 90 km 
+3e-8        # drl: Wavenumber increment [1/cm]   
+7e-6        # ws0: First guess for frequency[rad/s] 7e-6 for mode 2
+
+# Depth profile
+10
+[0 10 20 30 40 50 60 70 80 90]
+[100.06 100.52 104.23 133.14 307.81 692.19 866.86 895.77 900.00 900.00]
+
+# How many distance, mean v pairs will you provide (nv >= 0 )
+0           # nv: 0 = no mean flow,  any other number require additional arguments
+
+# Array of offshore distances for mean flow values (xv in km) (dimension nv)
+# Array of mean velocities corresponding to xv (vbar in cm/sec)
+#[0 10 20 30 40 50 60 70 80 90]
+#[5 5 5 5 5 5 5 5 5 5]
+
+# Bottom friction
+1           # nr
+45           # xr [km]
+0.05        # rr [cm/s]
