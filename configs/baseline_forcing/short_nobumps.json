@@ -1,0 +1,7 @@
+{
+    "name": "short_nobumps",    
+    "T": 1382400.0,
+    "tmax": 16588800,
+    "dt":2,
+    "Acorr" : 0
+}

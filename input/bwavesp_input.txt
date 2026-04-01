@@ -1,5 +1,5 @@
-# Input fields bswave
-# For relevant slope geometry
+# Input fields bwavesp
+# For our slope geometry
 
 # Grid and domain settings
 90          # nn: Number of grid points across shelf

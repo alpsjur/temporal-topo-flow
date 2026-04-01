@@ -1,0 +1,28 @@
+name: temporal-topo-flow
+channels:
+  - conda-forge
+channel_priority: strict
+dependencies:
+  - python=3.12
+
+  # critical compatibility pair
+  - xarray=2023.6.*
+  - xgcm=0.8.1
+
+  # core data stack
+  - numpy
+  - pandas
+  - scipy
+  - netcdf4
+  - cftime
+
+  # plotting and analysis
+  - matplotlib
+  - seaborn
+  - cmocean
+  - scikit-image
+
+  # notebooks
+  - jupyter
+  - ipykernel
+
