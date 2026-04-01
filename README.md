@@ -89,7 +89,7 @@ By default, outputs are written under `output/raw/`.
 #### Batch runs
 To run the full set of experiments used in the paper, use the provided batch script:
 ```
-./run_simulations.bash
+bash scripts/run_simulations.sh
 ```
 
 This script loops over a predefined set of configurations and launches the corresponding simulations.  
