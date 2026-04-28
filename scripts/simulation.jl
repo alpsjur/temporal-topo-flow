@@ -37,8 +37,9 @@ default_params = Dict(
 
     # Simulation parameters
     "dt" => 4.0,              
-    "tmax" => 4 * 86400.0,        # 4 days in seconds
-    "outputtime" => 3 * 3600.0,   # 3 hours in seconds
+    #"tmax" => 4 * 86400.0,        # 4 days in seconds
+    "tmax" => 3 * 3 * 3600.0,      # three times output time
+    "outputtime" => 3 * 3600.0,    # 3 hours in seconds
 
     # Forcing parameters
     "tau0" => 0.0001,              # maximum kinematic forcing [m2 s-2]
@@ -257,7 +258,21 @@ model = ShallowWaterModel(; grid, coriolis, gravitational_acceleration=params["g
                           forcing=(u=forcing_u, v=forcing_v))
 set!(model, h=h_initial)
 
+# Plot bathymetry 
+using CairoMakie    
 
+figurepath = "figures/bathymetry/"
+fig = Figure(size=(1200, 800))
+axis = Axis(fig[1, 1], 
+            aspect=DataAspect(),
+            title="Model bathymetry",
+            xlabel="x [m]",
+            ylabel="y [m]")
+
+depth = model.solution.h   
+hm = heatmap!(axis, depth, colormap=:deep)
+Colorbar(fig[1, 2], hm, label="Depth [m]")
+save(figurepath * runname * "-bathymetry.png", fig)
 
 # Initialize simulation
 simulation = Simulation(model, Δt=dt, stop_time=tmax)
