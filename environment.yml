@@ -9,14 +9,14 @@ dependencies:
   - xarray=2023.6.*
   - xgcm=0.8.1
 
-  # core data stack
+  # data handeling 
   - numpy
   - pandas
   - scipy
   - netcdf4
   - cftime
 
-  # plotting and analysis
+  # plotting 
   - matplotlib
   - seaborn
   - cmocean

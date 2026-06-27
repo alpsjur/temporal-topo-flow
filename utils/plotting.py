@@ -31,19 +31,28 @@ palette = {
 }
 
 
-colorwheel = [
-    (000, 000, 000),   # black
-    (000,158,115),  # green
-    (213,94,0),    # orange
-    (000,114,178), # blue
-    # gray scale    
-    (85,85,85),    # dark gray
-    (170,170,170), # light gray
+# colorwheel = [
+#     (000, 000, 000),   # black
+#     (000,158,115),  # green
+#     (213,94,0),    # orange
+#     (000,114,178), # blue
+#     # gray scale    
+#     (85,85,85),    # dark gray
+#     (170,170,170), # light gray
     
-]
+# ]
 
-#transform to hex
-colorwheel = ['#%02x%02x%02x' % color for color in colorwheel]
+# #transform to hex
+# colorwheel = ['#%02x%02x%02x' % color for color in colorwheel]
+
+colorwheel = [
+    "#000000",  # black
+    "#009E73",
+    "#D55E00",
+    "#0072B2",
+    "#CC79A7",
+    "#BDBDBD"
+]
 
 # Global style settings for article figures
 plt.rcParams.update({

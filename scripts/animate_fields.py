@@ -11,7 +11,7 @@ Velocity vectors are downsampled for clarity. Speed is represented both by vecto
 - Produces an MP4 saved under animations/animation_{name}.ext.
 """
 
-import xarray as xr
+#import xarray as xr
 import numpy as np
 import sys
 from pathlib import Path
@@ -23,10 +23,10 @@ import os
 # Add project root to sys.path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from utils.grid import prepare_dsH, interp_ds
+from utils.grid import interp_ds
 from utils.config import load_config
 from utils.io import read_raw_output
-from utils.plotting import create_figure, palette, colorwheel, customize_axis, get_figure_dimensions
+from utils.plotting import palette, colorwheel
 
 
 # Parameters for arrow density and scaling, for readability
