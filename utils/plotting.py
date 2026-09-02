@@ -19,15 +19,18 @@ orig_cmap = plt.get_cmap("Blues")
 new_cmap = orig_cmap(np.linspace(0.2, 1.0, 256))
 new_cmap = matplotlib.colors.ListedColormap(new_cmap)
 
+# Make a reversed sliced colormap (20–100% of the Blues colormap)
+orig_cmap_rev = plt.get_cmap("Blues_r")
+new_cmap_rev = orig_cmap_rev(np.linspace(0, 0.8, 256))
+new_cmap_rev = matplotlib.colors.ListedColormap(new_cmap_rev)
+
 # Color palette
 palette = {
     "background": "#ffffff",
     "text": "#000000",
-    #"accent2": "#6495ED",  
-    #"accent3": "#09B1A3",
-    "cmdiv": cmo.balance,      # muted, diverging
-    #"cmcat": cmc.batlow,   # perceptually uniform, colorblind-friendly
-    "cmseq": new_cmap#cmo.deep,      # good for 1D fields (e.g., SSH, T, etc.)
+    "cmdiv": cmo.balance,    
+    "cmseq": new_cmap,      
+    "cmseq_rev": new_cmap_rev
 }
 
 
